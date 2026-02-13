@@ -1,0 +1,21 @@
+# python
+venv/
+__pycache__/
+*.pyc
+
+
+
+# ml
+*.pt
+*.pth
+ml-service/venv/
+
+# node
+node_modules/
+    
+# env
+.env
+
+# builds
+dist/
+build/
