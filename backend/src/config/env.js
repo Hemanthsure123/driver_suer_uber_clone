@@ -8,6 +8,7 @@ const env = {
   port: process.env.PORT || 5000,
 
   mongoUri: process.env.MONGO_URI,
+  redisUrl: process.env.REDIS_URL || "redis://localhost:6379",
 
   jwt: {
     secret: process.env.JWT_SECRET,

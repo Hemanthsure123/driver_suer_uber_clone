@@ -56,6 +56,10 @@ const driverSchema = new mongoose.Schema(
       type: Boolean,
       default: false
     },
+    isAvailable: {
+      type: Boolean,
+      default: true // Automatically ready to receive rides when online
+    },
 
     // 📷 KYC
     selfieUrl: {

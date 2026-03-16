@@ -86,6 +86,28 @@ export const signup = async (req, res) => {
         return res.status(400).json({ error: "Driver details required" });
       }
 
+      // Check driver uniqueness constraints before creating the User
+      const existingDriver = await Driver.findOne({
+        $or: [
+          { licenseNumber: driverDetails.licenseNumber },
+          { "vehicle.rcNumber": driverDetails.vehicle.rcNumber },
+          { phone: driverDetails.phone }
+        ]
+      });
+
+      if (existingDriver) {
+        if (existingDriver.licenseNumber === driverDetails.licenseNumber) {
+          return res.status(409).json({ error: "License number already registered" });
+        }
+        if (existingDriver.vehicle.rcNumber === driverDetails.vehicle.rcNumber) {
+          return res.status(409).json({ error: "RC number already registered" });
+        }
+        if (existingDriver.phone === driverDetails.phone) {
+          return res.status(409).json({ error: "Phone number already registered" });
+        }
+        return res.status(409).json({ error: "Driver details already registered" });
+      }
+
       const user = await User.create({
         email,
         passwordHash,

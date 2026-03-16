@@ -1,0 +1,155 @@
+
+> uber-clone-backend@1.0.0 start
+> node src/server.js
+
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+🟢 Redis Connected Successfully
+✅ MongoDB connected
+🚀 Server running on port 5000
+🔌 New client connected: FuHklYv2NZo3qjDaAAAD
+🔌 New client connected: GwGe19d63jVy9aPAAAAE
+🔌 New client connected: H625SUDRLmflNjEBAAAF
+🔌 New client connected: KC1-Sr83PPOP7F2MAAAH
+🔌 New client connected: -6_8m7SsHj-ZwTREAAAJ
+🔌 New client connected: 7t8wEcakU4P0SB6rAAAN
+🔌 New client connected: YpUD2WwbjGalRfPCAAAO
+🔌 New client connected: fTG87H_zmWcpoldgAAAQ
+🔌 New client connected: -ebEF0oyfUuYg7PiAAAR
+🔌 New client connected: aqY6rGDgUxk7Kc3xAAAT
+🔌 New client connected: 47cyeMPb_zSms1WyAAAV
+🔌 New client connected: yGGRD7mnJeeGR9yXAAAY
+🔌 New client connected: Hed0IGOmpzOLm7l2AAAZ
+🔌 New client connected: udGBjxcuhDhzFC5KAAAb
+🔌 New client connected: xvHEsrExR9Fy3IfhAAAd
+🔌 New client connected: N4mJZX81f1X7UJ-oAAAf
+🔌 New client connected: i-ssb45ZvakZ45BnAAAi
+🔌 New client connected: VstM1pwCYG2vZ5KgAAAj
+🔌 New client connected: aWpqI9e5w9vEiaQNAAAl
+🔌 New client connected: hOqWgoCebeyfKO8yAAAn
+🔌 New client connected: EuVXnST5oykIzJnmAAAt
+🔌 New client connected: ZF64GgkohWxyv-OpAAAu
+🔌 New client connected: lw4mYV58xTdQwCQzAAAv
+🔌 New client connected: R_CcwItC3u-bMY2UAAAw
+🔌 New client connected: rD62uW0BbhXBTbk7AAAx
+🔌 New client connected: YatJN2l4Xs__oW4lAAAz
+🔌 New client connected: h-0TYTYKMpbEBr6uAAA1
+🔌 New client connected: UUbKIZi2BNQh6LDwAAA3
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.3505086243131, 17.418214744630998]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.3505086243131, 17.418214744630998]
+[Socket] Registered User 698f35370d3cb713d520c90c (USER) to socket Hed0IGOmpzOLm7l2AAAZ
+[Socket] Registered User 698f35c00d3cb713d520c917 (DRIVER) to socket EuVXnST5oykIzJnmAAAt
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.35050914551998, 17.418216067321907]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.35050914551998, 17.418216067321907]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.35050914551998, 17.418216067321907]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.35049431620955, 17.41825430026001]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.35049431620955, 17.41825430026001]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.35049745726317, 17.418249827601482]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.35049745726317, 17.418249827601482]
+[RideBooking] User requested ride at [78.3503826, 17.4180777]. Found 1 drivers within 5km.
+[RideBooking] GEORADIUS match around [78.3503826, 17.4180777]: 698f35c00d3cb713d520c917
+[RideBooking] DB valid drivers left: 1
+[RideBooking] Attempting to ping Driver 698f35c00d3cb713d520c917 on socket aqY6rGDgUxk7Kc3xAAAT
+[RideBooking] Successfully emitted to 1 live sockets.
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.35049745726317, 17.418249827601482]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.35049792087338, 17.41825269924765]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.35050080910322, 17.418243208780137]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.35050080910322, 17.418243208780137]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.35049615951918, 17.418217412766783]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.35049615951918, 17.418217412766783]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.3504974678903, 17.4182185796784]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.3504974678903, 17.4182185796784]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.3504974678903, 17.4182185796784]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.3504974678903, 17.4182185796784]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.3504974678903, 17.4182185796784]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.35049885270479, 17.41823449319684]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.35049885270479, 17.41823449319684]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.35049535674702, 17.418246769033868]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.35049535674702, 17.418246769033868]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.35049535674702, 17.418246769033868]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.35048118207322, 17.418284523601564]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.35048118207322, 17.418284523601564]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.35048118207322, 17.418284523601564]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.35048035818551, 17.41829284747821]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.35048035818551, 17.41829284747821]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.35049493845351, 17.41825749810705]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.35049493845351, 17.41825749810705]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.35049493845351, 17.41825749810705]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.35049493845351, 17.41825749810705]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.35050191821836, 17.4182280675345]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.35049350993587, 17.418257229947194]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.3504967501978, 17.41825030733874]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.3504967501978, 17.41825030733874]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.3504967501978, 17.41825030733874]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.3504967501978, 17.41825030733874]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.3504967501978, 17.41825030733874]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.3504967501978, 17.41825030733874]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.3504967501978, 17.41825030733874]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.3504967501978, 17.41825030733874]
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.3504967501978, 17.41825030733874]
+🔌 Client disconnected: FuHklYv2NZo3qjDaAAAD
+🔌 Client disconnected: ZF64GgkohWxyv-OpAAAu
+🔌 Client disconnected: 47cyeMPb_zSms1WyAAAV
+🔌 Client disconnected: i-ssb45ZvakZ45BnAAAi
+🔌 Client disconnected: fTG87H_zmWcpoldgAAAQ
+🔌 Client disconnected: 7t8wEcakU4P0SB6rAAAN
+🔌 Client disconnected: xvHEsrExR9Fy3IfhAAAd
+🔌 Client disconnected: hOqWgoCebeyfKO8yAAAn
+🔌 Client disconnected: h-0TYTYKMpbEBr6uAAA1
+🔌 Client disconnected: Hed0IGOmpzOLm7l2AAAZ
+🔌 Client disconnected: H625SUDRLmflNjEBAAAF
+🔌 Client disconnected: YatJN2l4Xs__oW4lAAAz
+🔌 Client disconnected: VstM1pwCYG2vZ5KgAAAj
+🔌 Client disconnected: aqY6rGDgUxk7Kc3xAAAT
+🔌 Client disconnected: yGGRD7mnJeeGR9yXAAAY
+🔌 Client disconnected: UUbKIZi2BNQh6LDwAAA3
+🔌 Client disconnected: N4mJZX81f1X7UJ-oAAAf
+🔌 Client disconnected: GwGe19d63jVy9aPAAAAE
+🔌 Client disconnected: R_CcwItC3u-bMY2UAAAw
+🔌 Client disconnected: -6_8m7SsHj-ZwTREAAAJ
+🔌 Client disconnected: KC1-Sr83PPOP7F2MAAAH
+🔌 Client disconnected: YpUD2WwbjGalRfPCAAAO
+🔌 Client disconnected: aWpqI9e5w9vEiaQNAAAl
+🔌 Client disconnected: rD62uW0BbhXBTbk7AAAx
+🔌 Client disconnected: EuVXnST5oykIzJnmAAAt
+🔌 Client disconnected: -ebEF0oyfUuYg7PiAAAR
+🔌 Client disconnected: lw4mYV58xTdQwCQzAAAv
+🔌 Client disconnected: udGBjxcuhDhzFC5KAAAb
+[Socket] Driver 698f35c00d3cb713d520c917 removed from online GEO store.
+[Socket] Driver 698f35c00d3cb713d520c917 removed from online GEO store.
+🔌 New client connected: mNDxOW4lICWPMEhsAAA5
+🔌 New client connected: H-BryIU7HZa7DE_kAAA7
+🔌 New client connected: QG4sdqbMi1TC4wQlAAA9
+🔌 New client connected: KU3AJtYdlyK7XkadAAA_
+🔌 New client connected: aYUvCXU2bxY8iflvAABB
+🔌 New client connected: 1x3JGVFACni13QthAABK
+🔌 New client connected: As82UopXLefpgcyHAABL
+🔌 New client connected: gkOg9LfJwkQ8jczwAABM
+🔌 New client connected: LhW3AdaurDEtLTQYAABN
+🔌 New client connected: 0RJ4PxFR4_iJ1ivHAABO
+🔌 New client connected: 1sT_5oGSAgrTY-73AABR
+🔌 New client connected: 50fIszcM-5k4w24QAABT
+🔌 New client connected: UqRSyOumXLf1Uq13AABV
+[Socket] Registered User 698f35370d3cb713d520c90c (USER) to socket As82UopXLefpgcyHAABL
+[Socket] Registered User 698f35370d3cb713d520c90c (DRIVER) to socket LhW3AdaurDEtLTQYAABN
+🔌 New client connected: 0QutZbcM86-_Uj2jAABW
+[Socket] Registered User 698f35c00d3cb713d520c917 (DRIVER) to socket 1sT_5oGSAgrTY-73AABR
+🔌 New client connected: 1g7J3VRXepLwjKjfAABX
+🔌 New client connected: GbmX5mzYcEK80HqxAABY
+[Socket] Registered User 698f35c00d3cb713d520c917 (USER) to socket 50fIszcM-5k4w24QAABT
+🔌 New client connected: JqTQM8RtxY-I6iWgAABZ
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.3504967501978, 17.41825030733874]
+🔌 New client connected: TIRLFNK0KHyFNdAIAABc
+[Socket] Registered User 698f35370d3cb713d520c90c (DRIVER) to socket LhW3AdaurDEtLTQYAABN
+📍 Updated location for driver 698f35370d3cb713d520c90c: [78.3504967501978, 17.41825030733874]
+📍 Updated location for driver 698f35370d3cb713d520c90c: [78.3504967501978, 17.41825030733874]
+🔌 New client connected: xenM0HWVNE2yYGW1AABd
+🔌 New client connected: ugoVwC_X30tgQI4aAABn
+🔌 New client connected: -YgjImHH2TYh_JKRAABo
+🔌 New client connected: hx_dr5f35jzZ3Dw9AABp
+🔌 New client connected: GYvoXj8yzjLiM22-AABq
+🔌 New client connected: wOkHBv49HAPqh37NAABr
+🔌 New client connected: Zdd-oejhcXkuHEhfAABs
+🔌 New client connected: XwyliMVkb3Uj26iaAABt
+🔌 New client connected: nTtJuKcJ6pzvEbTCAABu
+🔌 New client connected: AWz5LlpRCrth8GhBAABv
+📍 Updated location for driver 698f35c00d3cb713d520c917: [78.3504942238309, 17.41825711512088]

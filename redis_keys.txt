@@ -1,0 +1,3 @@
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+🟢 Redis Connected Successfully
+["socket_driver:WWkd9lfYHT9CaqIAAAAm","drivers:online","socket_user:EuVXnST5oykIzJnmAAAt","socket_user:5Tr_7V-mpRy9BZquAAAj","socket_driver:aqY6rGDgUxk7Kc3xAAAT","socket_driver:5Tr_7V-mpRy9BZquAAAj","socket_user:3qlPcW4xXTLdRKGGAAAX","user_socket:698f35c00d3cb713d520c917","socket_driver:4XpdSgLNFyjnqwLFAAAJ","socket_user:Vf9KGkPQY7FjFFERAAAR","socket_driver:EuVXnST5oykIzJnmAAAt","socket_user:Hed0IGOmpzOLm7l2AAAZ","driver_socket:698f35c00d3cb713d520c917","user_socket:698f35370d3cb713d520c90c","socket_user:WWkd9lfYHT9CaqIAAAAm"]

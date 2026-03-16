@@ -8,6 +8,8 @@ services:
       - "5000:5000"
     env_file:
       - ./backend/.env
+    environment:
+      - REDIS_URL=redis://redis:6379
     depends_on:
       - ml-service
     volumes:
@@ -20,6 +22,12 @@ services:
       - "8000:8000"
     volumes:
       - uploads_data:/app/uploads
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
 
   frontend:
     build: ./frontend

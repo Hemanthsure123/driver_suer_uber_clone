@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import axios from "../../api/axios";
+import { useNavigate } from "react-router-dom";
 
 export default function AdminDashboard() {
   const [pendingDrivers, setPendingDrivers] = useState([]);
   const [allDrivers, setAllDrivers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   const token = localStorage.getItem("token");
 
@@ -47,6 +49,12 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    navigate("/login");
+  };
+
   useEffect(() => {
     fetchDrivers();
   }, []);
@@ -55,7 +63,29 @@ export default function AdminDashboard() {
 
   return (
     <div style={styles.container}>
-      <h1 style={styles.header}>Admin Dashboard</h1>
+      <div style={{ position: "relative" }}>
+        <h1 style={styles.header}>Admin Dashboard</h1>
+        
+        {/* 🔴 LOGOUT BUTTON */}
+        <button
+          onClick={handleLogout}
+          style={{
+            position: 'absolute',
+            top: '0',
+            right: '0',
+            padding: '10px 20px',
+            backgroundColor: '#ff4d4f',
+            color: 'white',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+          }}
+        >
+          Logout
+        </button>
+      </div>
 
       <section style={styles.section}>
         <h2 style={styles.subHeader}>Pending Approvals ({pendingDrivers.length})</h2>

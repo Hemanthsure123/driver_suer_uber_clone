@@ -34,10 +34,16 @@ router.post("/liveness-check", upload.single("video"), async (req, res) => {
 
     const absolutePath = path.resolve(req.file.path);
 
-    // Call ML Service
+    // Call ML Service using JSON payload and a relative path that docker-compose volume mapping can read
+    const mlUrl = process.env.ML_SERVICE_URL || "http://ml-service:8000/liveness";
+
+    // Node is running natively on Windows. `req.file.path` looks like "uploads\filename.ext".
+    // We convert it to a Linux-friendly relative path: "uploads/filename.ext".
+    const relativePath = req.file.path.replace(/\\/g, "/");
+
     const mlRes = await axios.post(
-      "http://ml-service:8000/liveness",
-      { path: absolutePath }
+      mlUrl,
+      { path: relativePath }
     );
 
     console.log("ML response:", mlRes.data);
@@ -83,7 +89,8 @@ router.post("/liveness-check", upload.single("video"), async (req, res) => {
     if (req.file && fs.existsSync(req.file.path)) {
       fs.unlinkSync(req.file.path);
     }
-    res.status(500).json({ error: "Liveness failed" });
+    const errorMsg = err.response?.data?.reason || err.message || "Unknown error";
+    res.status(500).json({ error: `Liveness failed: ${errorMsg}` });
   }
 });
 

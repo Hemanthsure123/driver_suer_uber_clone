@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { signup } from "../../api/auth.api";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 export default function DriverSignup() {
   const [form, setForm] = useState({
@@ -74,146 +74,184 @@ export default function DriverSignup() {
   };
 
   return (
-    <>
-      <h2>Driver Signup</h2>
-
-      <input
-        placeholder="Full Name"
-        onChange={e =>
-          setForm({ ...form, fullName: e.target.value })
-        }
-      />
-
-      <input
-        placeholder="Email"
-        onChange={e =>
-          setForm({ ...form, email: e.target.value })
-        }
-      />
-
-      <input
-        placeholder="Phone"
-        onChange={e =>
-          setForm({ ...form, phone: e.target.value })
-        }
-      />
-
-      <input
-        type="password"
-        placeholder="Password"
-        onChange={e =>
-          setForm({ ...form, password: e.target.value })
-        }
-      />
-
-      <input
-        placeholder="Age"
-        onChange={e =>
-          setForm({ ...form, age: e.target.value })
-        }
-      />
-
-      <input
-        placeholder="License Number"
-        onChange={e =>
-          setForm({ ...form, licenseNumber: e.target.value })
-        }
-      />
-
-      <div>
-        Gender:
-        <label>
-          <input
-            type="radio"
-            name="gender"
-            checked={form.gender === "MALE"}
-            onChange={() =>
-              setForm({ ...form, gender: "MALE" })
-            }
-          />
-          Male
-        </label>
-
-        <label>
-          <input
-            type="radio"
-            name="gender"
-            checked={form.gender === "FEMALE"}
-            onChange={() =>
-              setForm({ ...form, gender: "FEMALE" })
-            }
-          />
-          Female
-        </label>
-
-        <label>
-          <input
-            type="radio"
-            name="gender"
-            checked={form.gender === "OTHERS"}
-            onChange={() =>
-              setForm({ ...form, gender: "OTHERS" })
-            }
-          />
-          Others
-        </label>
+    <div className="auth-container driver-auth-container">
+      <div className="auth-header">
+        <h2>Driver Registration</h2>
+        <p>Partner with us and start earning</p>
       </div>
 
-      <h3>Vehicle Details</h3>
+      <div className="auth-section-title">Personal Information</div>
 
-      <input
-        placeholder="Vehicle Brand"
-        onChange={e =>
-          setForm({
-            ...form,
-            vehicle: {
-              ...form.vehicle,
-              brand: e.target.value
+      <div className="auth-input-group">
+        <input
+          placeholder="Full Name"
+          onChange={e =>
+            setForm({ ...form, fullName: e.target.value })
+          }
+        />
+      </div>
+
+      <div className="auth-input-group">
+        <input
+          placeholder="Email Address"
+          onChange={e =>
+            setForm({ ...form, email: e.target.value })
+          }
+        />
+      </div>
+
+      <div className="auth-input-group">
+        <input
+          placeholder="Phone Number"
+          onChange={e =>
+            setForm({ ...form, phone: e.target.value })
+          }
+        />
+      </div>
+
+      <div className="auth-input-group">
+        <input
+          type="password"
+          placeholder="Password"
+          onChange={e =>
+            setForm({ ...form, password: e.target.value })
+          }
+        />
+      </div>
+
+      <div style={{ display: 'flex', gap: '15px' }}>
+        <div className="auth-input-group" style={{ flex: 1 }}>
+          <input
+            placeholder="Age"
+            onChange={e =>
+              setForm({ ...form, age: e.target.value })
             }
-          })
-        }
-      />
+          />
+        </div>
 
-      <input
-        placeholder="Vehicle Model"
-        onChange={e =>
-          setForm({
-            ...form,
-            vehicle: {
-              ...form.vehicle,
-              model: e.target.value
+        <div className="auth-input-group" style={{ flex: 2 }}>
+          <input
+            placeholder="License Number"
+            onChange={e =>
+              setForm({ ...form, licenseNumber: e.target.value })
             }
-          })
-        }
-      />
+          />
+        </div>
+      </div>
 
-      <input
-        placeholder="Vehicle Registered State"
-        onChange={e =>
-          setForm({
-            ...form,
-            vehicle: {
-              ...form.vehicle,
-              state: e.target.value
+      <div className="gender-group">
+        <span className="gender-label">Gender Selection</span>
+        <div className="radio-group">
+          <label>
+            <input
+              type="radio"
+              name="gender"
+              checked={form.gender === "MALE"}
+              onChange={() =>
+                setForm({ ...form, gender: "MALE" })
+              }
+            />
+            Male
+          </label>
+
+          <label>
+            <input
+              type="radio"
+              name="gender"
+              checked={form.gender === "FEMALE"}
+              onChange={() =>
+                setForm({ ...form, gender: "FEMALE" })
+              }
+            />
+            Female
+          </label>
+
+          <label>
+            <input
+              type="radio"
+              name="gender"
+              checked={form.gender === "OTHERS"}
+              onChange={() =>
+                setForm({ ...form, gender: "OTHERS" })
+              }
+            />
+            Other
+          </label>
+        </div>
+      </div>
+
+      <div className="auth-section-title">Vehicle Details</div>
+
+      <div style={{ display: 'flex', gap: '15px' }}>
+        <div className="auth-input-group" style={{ flex: 1 }}>
+          <input
+            placeholder="Brand (e.g., Toyota)"
+            onChange={e =>
+              setForm({
+                ...form,
+                vehicle: {
+                  ...form.vehicle,
+                  brand: e.target.value
+                }
+              })
             }
-          })
-        }
-      />
+          />
+        </div>
 
-      <input
-        placeholder="RC Number"
-        onChange={e =>
-          setForm({
-            ...form,
-            vehicle: {
-              ...form.vehicle,
-              rcNumber: e.target.value
+        <div className="auth-input-group" style={{ flex: 1 }}>
+          <input
+            placeholder="Model (e.g., Prius)"
+            onChange={e =>
+              setForm({
+                ...form,
+                vehicle: {
+                  ...form.vehicle,
+                  model: e.target.value
+                }
+              })
             }
-          })
-        }
-      />
+          />
+        </div>
+      </div>
 
-      <button onClick={submit}>Continue</button>
-    </>
+      <div style={{ display: 'flex', gap: '15px' }}>
+        <div className="auth-input-group" style={{ flex: 1 }}>
+          <input
+            placeholder="Registered State"
+            onChange={e =>
+              setForm({
+                ...form,
+                vehicle: {
+                  ...form.vehicle,
+                  state: e.target.value
+                }
+              })
+            }
+          />
+        </div>
+
+        <div className="auth-input-group" style={{ flex: 1 }}>
+          <input
+            placeholder="RC Number"
+            onChange={e =>
+              setForm({
+                ...form,
+                vehicle: {
+                  ...form.vehicle,
+                  rcNumber: e.target.value
+                }
+              })
+            }
+          />
+        </div>
+      </div>
+
+      <button className="auth-button" onClick={submit}>Create Driver Account</button>
+
+      <div className="auth-links">
+        <p>Already have an account?</p>
+        <Link to="/login">Sign In</Link>
+      </div>
+    </div>
   );
 }

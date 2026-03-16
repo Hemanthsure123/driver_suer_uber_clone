@@ -66,8 +66,8 @@ export default function App() {
           }
         />
 
-        {/* FALLBACK */}
-        <Route path="*" element={<h2>Page not found</h2>} />
+        {/* FALLBACK (Protect unknown routes by kicking to login) */}
+        <Route path="*" element={<Navigate to="/login" replace />} />
 
       </Routes>
     </BrowserRouter>

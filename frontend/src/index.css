@@ -1,68 +1,200 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+  --primary-accent: #000000;
+  --primary-hover: #333333;
+  --bg-color: #f3f4f6; /* Light gray background */
+  --bg-card: #ffffff; /* Crisp white cards */
+  --text-dark: #111827;
+  --text-muted: #6b7280;
+  --input-bg: #f9fafb;
+  --border-color: #e5e7eb;
 }
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
+  font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-dark);
   min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  -webkit-font-smoothing: antialiased;
+  background-image: radial-gradient(#d1d5db 1px, transparent 1px);
+  background-size: 20px 20px;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+/* Lightweight Modern Auth Container */
+.auth-container {
+  background: var(--bg-card);
+  padding: 40px;
+  border-radius: 24px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05);
+  width: 100%;
+  max-width: 400px;
+  box-sizing: border-box;
+  animation: slideUp 0.5s ease-out;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Driver Auth Container (Wider for more fields) */
+.driver-auth-container {
+  max-width: 550px;
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 35px;
+}
+
+.auth-header h2 {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-dark);
+  letter-spacing: -1px;
+}
+
+.auth-header p {
+  color: var(--text-muted);
+  font-size: 15px;
+  margin-top: 5px;
+}
+
+.auth-input-group {
+  margin-bottom: 20px;
+}
+
+.auth-input-group input {
+  width: 100%;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background-color: var(--input-bg);
+  color: var(--text-dark);
+  font-size: 16px;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.auth-input-group input:focus {
+  outline: none;
+  border-color: var(--primary-accent);
+  background-color: #ffffff;
+  box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.05);
+}
+
+.auth-input-group input::placeholder {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+/* Gender Selection Styles */
+.gender-group {
+  margin-bottom: 20px;
+}
+
+.gender-label {
+  display: block;
+  margin-bottom: 12px;
+  color: var(--text-dark);
+  font-size: 15px;
   font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+.radio-group {
+  display: flex;
+  gap: 15px;
+  background: var(--input-bg);
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+}
+
+.radio-group label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-dark);
+  flex: 1;
+  justify-content: center;
+}
+
+.radio-group input[type="radio"] {
+  accent-color: var(--primary-accent);
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}
+
+/* Buttons */
+.auth-button {
+  width: 100%;
+  padding: 16px;
+  border-radius: 12px;
+  border: none;
+  background: var(--primary-accent);
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 15px;
+}
+
+.auth-button:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.auth-button:active {
+  transform: translateY(1px);
+}
+
+/* Links List */
+.auth-links {
+  margin-top: 30px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  padding-top: 25px;
+  border-top: 1px dashed var(--border-color);
+}
+
+.auth-links p {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin: 0;
+}
+
+.auth-links a {
+  color: var(--primary-accent);
+  font-weight: 600;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.auth-links a:hover {
+  opacity: 0.7;
+  text-decoration: underline;
+}
+
+/* Section Dividers for Driver Signup */
+.auth-section-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin: 30px 0 15px 0;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
