@@ -17,36 +17,37 @@ const producer = kafka.producer({ createPartitioner: Partitioners.LegacyPartitio
 const consumer = kafka.consumer({ groupId: 'backend-consumer-group' });
 
 export const connectKafka = async () => {
-  try {
-    await producer.connect();
-    console.log('✅ Kafka Producer connected');
-
-    await consumer.connect();
-    console.log('✅ Kafka Consumer connected');
-
-    // Subscribe to topics
-    await consumer.subscribe({ topic: 'video_verification_results', fromBeginning: false });
-    await consumer.subscribe({ topic: 'driver_locations', fromBeginning: false });
-
-    // Start consuming
-    await consumer.run({
-      eachMessage: async ({ topic, partition, message }) => {
+    let retries = 10;
+    while (retries > 0) {
         try {
-          const value = JSON.parse(message.value.toString());
+            await producer.connect();
+            console.log('✅ Kafka Producer connected');
+            await consumer.connect();
+            
+            await consumer.subscribe({ topics: ['video_verification_tasks', 'video_verification_results', 'driver_locations'], fromBeginning: true });
+            
+            console.log('✅ Kafka Consumer connected and topics subscribed');
 
-          if (topic === 'video_verification_results') {
-            await handleVideoVerificationResult(value);
-          } else if (topic === 'driver_locations') {
-            await handleDriverLocation(value);
-          }
+            await consumer.run({
+                eachMessage: async ({ topic, partition, message }) => {
+                    const data = JSON.parse(message.value.toString());
+                    
+                    if (topic === 'driver_locations') {
+                        await handleDriverLocation(data);
+                    } else if (topic === 'video_verification_results') {
+                        await handleVideoVerificationResult(data);
+                    }
+                },
+            });
+            return; // Successfully connected and listening, exit loop
         } catch (err) {
-          console.error(`❌ Error processing Kafka message on topic ${topic}:`, err);
+            retries -= 1;
+            console.error(`❌ Kafka Connection Error. Retries left: ${retries}. Waiting 5 seconds...`, err.message);
+            if (retries === 0) {
+                console.error('🚨 Kafka completely failed to connect. Location streams will be inactive.');
+            }
+            await new Promise(res => setTimeout(res, 5000));
         }
-      },
-    });
-
-  } catch (error) {
-    console.error('❌ Failed to connect to Kafka', error);
   }
 };
 

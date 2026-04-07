@@ -1,0 +1,8 @@
+﻿
+> uber-clone-backend@1.0.0 start
+> node src/server.js
+
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ≡ƒöä add secrets lifecycle management: https://dotenvx.com/ops
+≡ƒƒó Redis Connected Successfully
+Γ£à MongoDB connected
+≡ƒÜÇ Server running on port 5000
