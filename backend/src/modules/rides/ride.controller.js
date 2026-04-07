@@ -32,12 +32,22 @@ export const bookRide = async (req, res) => {
             rideStatus: "requested"
         });
 
-        // 2. Query Redis for nearby drivers (5km radius)
+        // 2. Query Redis for nearby drivers (5km radius) using ngeohash
         const [lon, lat] = pickup.coordinates;
-        // returns array of driver IDs
-        const nearbyDriverIds = await redisClient.georadius("drivers:online", lon, lat, 5, "km");
+        
+        const { default: geohash } = await import('ngeohash');
+        const hash = geohash.encode(lat, lon, 5);
+        const gridsToScan = [hash, ...geohash.neighbors(hash)];
+        
+        const results = await Promise.all(
+            gridsToScan.map(grid => redisClient.smembers(`grid:${grid}`))
+        );
+        
+        let nearbyDriverIds = [];
+        results.forEach(gridDrivers => nearbyDriverIds.push(...gridDrivers));
+        nearbyDriverIds = [...new Set(nearbyDriverIds)];
 
-        console.log(`[RideBooking] User requested ride at [${lon}, ${lat}]. Found ${nearbyDriverIds.length} drivers within 5km.`);
+        console.log(`[RideBooking] User requested ride at [${lon}, ${lat}]. Found ${nearbyDriverIds.length} drivers via Grids.`);
 
         if (nearbyDriverIds.length === 0) {
             // No drivers online nearby at all
