@@ -28,35 +28,60 @@ export const initializeSocket = (server) => {
 
         /**
          * 1. REAL-TIME LOCATION TRACKING
-         * Store location in Redis Geospatial index (only tracks active online locations)
+         * Push location updates into high throughput Kafka Topic stream
          */
         socket.on("update-location", async (data) => {
-            const { driverId, latitude, longitude } = data;
+            const { driverId, latitude, longitude, activeRideUserId } = data;
             if (driverId && latitude && longitude) {
                 try {
-                    // GEOADD key longitude latitude member
-                    // Redis requires: longitude, latitude
-                    await redisClient.geoadd("drivers:online", longitude, latitude, driverId);
+                    // Lazy import so we don't circularly depend if kafka touches socket
+                    const { produceMessage } = await import("./config/kafka.js");
                     
-                    // Maintain lookup maps
+                    // Maintain socket mapping for immediate logic
                     await redisClient.set(`driver_socket:${driverId}`, socket.id);
                     await redisClient.set(`socket_driver:${socket.id}`, driverId);
                     
-                    console.log(`📍 Updated location for driver ${driverId}: [${longitude}, ${latitude}]`);
+                    // Produce location update task
+                    await produceMessage("driver_locations", [{
+                        driverId,
+                        latitude,
+                        longitude,
+                        activeRideUserId
+                    }]);
+                    
                 } catch (err) {
-                    console.error("GEOADD Error:", err);
+                    console.error("Location Producer Error:", err);
                 }
             }
         });
 
         /**
-         * RIDE MATCHING LOOP
+         * RIDE MATCHING LOOP USING GEOHASH CHUNKING
          * Users trigger this while waiting for a driver to periodically scan Redis
          */
         socket.on("retry-match", async ({ rideId, pickup, drop, distanceKm, fareAmount }) => {
             try {
+                const { default: geohash } = await import('ngeohash');
                 const [lon, lat] = pickup.coordinates;
-                const nearbyDriverIds = await redisClient.georadius("drivers:online", lon, lat, 5, "km");
+                
+                // 1. Calculate precise grid hash
+                const hash = geohash.encode(lat, lon, 5);
+                
+                // 2. Fetch the 8 mathematical neighbors without computing dynamic geometry
+                const gridsToScan = [hash, ...geohash.neighbors(hash)];
+                
+                // 3. Pull from Redis O(1) sets concurrently
+                const results = await Promise.all(
+                    gridsToScan.map(grid => redisClient.smembers(`grid:${grid}`))
+                );
+                
+                let nearbyDriverIds = [];
+                results.forEach(gridDrivers => {
+                    nearbyDriverIds.push(...gridDrivers);
+                });
+                
+                // Remove duplicates if edge cases triggered overlaps
+                nearbyDriverIds = [...new Set(nearbyDriverIds)];
                 
                 if (nearbyDriverIds.length > 0) {
                     const Driver = (await import("./modules/drivers/driver.model.js")).default;

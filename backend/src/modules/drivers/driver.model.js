@@ -98,6 +98,13 @@ const driverSchema = new mongoose.Schema(
       type: String,
       enum: ["PENDING", "APPROVED", "REJECTED"],
       default: "PENDING"
+    },
+
+    // 🎥 ML LIVENESS STATUS
+    livenessStatus: {
+      type: String,
+      enum: ["PENDING", "PROCESSING", "COMPLETED", "FAILED"],
+      default: "PENDING"
     }
   },
   {

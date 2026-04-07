@@ -54,10 +54,16 @@
   "jsonwebtoken": "^9.0.3",
   
     
+  "kafkajs": "^2.2.4",
+  
+    
   "mongoose": "^9.1.2",
   
     
   "multer": "^2.0.2",
+  
+    
+  "ngeohash": "^0.6.3",
   
     
   "nodemailer": "^7.0.12",

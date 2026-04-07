@@ -1,9 +1,10 @@
 import express from "express";
 import multer from "multer";
-import axios from "axios";
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
+
+import { produceMessage } from "../../config/kafka.js";
 
 import User from "../users/user.model.js";
 import Driver from "./driver.model.js";
@@ -32,65 +33,51 @@ router.post("/liveness-check", upload.single("video"), async (req, res) => {
     console.log("Video received:", req.file?.path);
     const { email } = req.body;
 
-    const absolutePath = path.resolve(req.file.path);
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
-    // Call ML Service using JSON payload and a relative path that docker-compose volume mapping can read
-    const mlUrl = process.env.ML_SERVICE_URL || "http://ml-service:8000/liveness";
-
-    // Node is running natively on Windows. `req.file.path` looks like "uploads\filename.ext".
-    // We convert it to a Linux-friendly relative path: "uploads/filename.ext".
+    // Convert file path strictly for cross-platform docker compatibility
     const relativePath = req.file.path.replace(/\\/g, "/");
 
-    const mlRes = await axios.post(
-      mlUrl,
-      { path: relativePath }
+    // 1. Update Driver liveness status to PROCESSING
+    const driver = await Driver.findOneAndUpdate(
+      { userId: user._id },
+      { livenessStatus: "PROCESSING" },
+      { new: true }
     );
-
-    console.log("ML response:", mlRes.data);
-    const confidence = Number(mlRes.data.confidence);
-
-    // If confidence passes, save selfieUrl to Driver
-    if (!isNaN(confidence) && confidence >= 70 && email) {
-      const user = await User.findOne({ email });
-      if (user) {
-        // We keep the file as the "selfie" (or we could extract a frame, but for now use the video file path)
-        // Normalize path for URL usage if needed, but local path is fine for the check.
-        // Let's store a relative path accessible via static middleware ideally, 
-        // but the prompt just needs "selfie updated in database" to pass login check.
-
-        // Don't delete the file if we are using it as the selfieUrl
-        // But if we delete it, login fails if it checks file existence? 
-        // No, login auth.controller just checks `if (!driver?.selfieUrl)`. It checks if the FIELD is in DB.
-
-        // NOTE: The previous code deleted the file: fs.unlinkSync(req.file.path);
-        // I will NOT delete it if successful, so it exists physically too.
-
-        await Driver.updateOne(
-          { userId: user._id },
-          { selfieUrl: req.file.path }
-        );
-        console.log(`Driver selfieUrl updated for ${email}`);
-      }
-    } else {
-      // Clean up if failed
-      if (fs.existsSync(req.file.path)) {
-        fs.unlinkSync(req.file.path);
-      }
+    
+    if (!driver) {
+       return res.status(404).json({ message: "Driver profile not found" });
     }
 
-    res.json(mlRes.data);
+    // 2. Publish Task to Kafka topic
+    await produceMessage("video_verification_tasks", [
+      {
+        _id: driver._id.toString(),
+        userId: user._id.toString(),
+        path: relativePath,
+        email
+      }
+    ]);
+
+    // 3. Immediatly return 202 Accepted status while ML service consumes the task
+    res.status(202).json({
+      success: true,
+      status: "PROCESSING",
+      message: "Video verification task submitted. Result will be updated asynchronously."
+    });
 
   } catch (err) {
-    console.error("Liveness error:", err.message);
-    if (err.response) {
-      console.error("ML error response:", err.response.data);
-    }
-    // Cleanup on error
+    console.error("Liveness upload error:", err.message);
+    
+    // Cleanup on error (cannot process)
     if (req.file && fs.existsSync(req.file.path)) {
       fs.unlinkSync(req.file.path);
     }
-    const errorMsg = err.response?.data?.reason || err.message || "Unknown error";
-    res.status(500).json({ error: `Liveness failed: ${errorMsg}` });
+    
+    res.status(500).json({ error: `Liveness failed to enqueue: ${err.message}` });
   }
 });
 
