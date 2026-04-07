@@ -157,7 +157,7 @@ export default function DriverDashboard() {
           }
         },
         (error) => console.error("Geolocation error:", error),
-        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+        { enableHighAccuracy: true, timeout: 20000, maximumAge: 10000 }
       );
     }
   };
