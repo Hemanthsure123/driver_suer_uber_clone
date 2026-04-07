@@ -1,0 +1,61 @@
+
+> uber-clone-backend@1.0.0 start
+> node src/server.js
+
+[dotenv@17.2.3] injecting env (0) from .env -- tip: 🔄 add secrets lifecycle management: https://dotenvx.com/ops
+🟢 Redis Connected Successfully
+✅ MongoDB connected
+{"level":"ERROR","timestamp":"2026-04-07T18:01:16.208Z","logger":"kafkajs","message":"[Connection] Connection timeout","broker":"kafka:9092","clientId":"uber-backend"}
+{"level":"ERROR","timestamp":"2026-04-07T18:01:16.210Z","logger":"kafkajs","message":"[BrokerPool] Failed to connect to seed broker, trying another broker from the list: Connection timeout","retryCount":0,"retryTime":86}
+{"level":"ERROR","timestamp":"2026-04-07T18:01:17.297Z","logger":"kafkajs","message":"[Connection] Connection timeout","broker":"kafka:9092","clientId":"uber-backend"}
+{"level":"ERROR","timestamp":"2026-04-07T18:01:17.297Z","logger":"kafkajs","message":"[BrokerPool] Failed to connect to seed broker, trying another broker from the list: Connection timeout","retryCount":1,"retryTime":184}
+{"level":"ERROR","timestamp":"2026-04-07T18:01:18.482Z","logger":"kafkajs","message":"[Connection] Connection timeout","broker":"kafka:9092","clientId":"uber-backend"}
+{"level":"ERROR","timestamp":"2026-04-07T18:01:18.483Z","logger":"kafkajs","message":"[BrokerPool] Failed to connect to seed broker, trying another broker from the list: Connection timeout","retryCount":2,"retryTime":336}
+{"level":"ERROR","timestamp":"2026-04-07T18:01:19.821Z","logger":"kafkajs","message":"[Connection] Connection timeout","broker":"kafka:9092","clientId":"uber-backend"}
+{"level":"ERROR","timestamp":"2026-04-07T18:01:19.822Z","logger":"kafkajs","message":"[BrokerPool] Failed to connect to seed broker, trying another broker from the list: Connection timeout","retryCount":3,"retryTime":616}
+{"level":"ERROR","timestamp":"2026-04-07T18:01:20.216Z","logger":"kafkajs","message":"[Connection] Connection error: getaddrinfo EAI_AGAIN kafka","broker":"kafka:9092","clientId":"uber-backend","stack":"Error: getaddrinfo EAI_AGAIN kafka\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)"}
+{"level":"ERROR","timestamp":"2026-04-07T18:01:20.262Z","logger":"kafkajs","message":"[Connection] Connection error: getaddrinfo ENOTFOUND kafka","broker":"kafka:9092","clientId":"uber-backend","stack":"Error: getaddrinfo ENOTFOUND kafka\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)"}
+{"level":"ERROR","timestamp":"2026-04-07T18:01:21.440Z","logger":"kafkajs","message":"[Connection] Connection timeout","broker":"kafka:9092","clientId":"uber-backend"}
+{"level":"ERROR","timestamp":"2026-04-07T18:01:21.441Z","logger":"kafkajs","message":"[BrokerPool] Failed to connect to seed broker, trying another broker from the list: Connection timeout","retryCount":4,"retryTime":1446}
+{"level":"ERROR","timestamp":"2026-04-07T18:01:23.889Z","logger":"kafkajs","message":"[Connection] Connection timeout","broker":"kafka:9092","clientId":"uber-backend"}
+{"level":"ERROR","timestamp":"2026-04-07T18:01:23.890Z","logger":"kafkajs","message":"[BrokerPool] Failed to connect to seed broker, trying another broker from the list: Connection timeout","retryCount":5,"retryTime":2566}
+{"level":"ERROR","timestamp":"2026-04-07T18:01:24.178Z","logger":"kafkajs","message":"[Connection] Connection error: getaddrinfo ENOTFOUND kafka","broker":"kafka:9092","clientId":"uber-backend","stack":"Error: getaddrinfo ENOTFOUND kafka\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)"}
+{"level":"ERROR","timestamp":"2026-04-07T18:01:24.218Z","logger":"kafkajs","message":"[Connection] Connection error: getaddrinfo ENOTFOUND kafka","broker":"kafka:9092","clientId":"uber-backend","stack":"Error: getaddrinfo ENOTFOUND kafka\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)"}
+{"level":"ERROR","timestamp":"2026-04-07T18:01:27.455Z","logger":"kafkajs","message":"[Connection] Connection timeout","broker":"kafka:9092","clientId":"uber-backend"}
+{"level":"ERROR","timestamp":"2026-04-07T18:01:27.456Z","logger":"kafkajs","message":"[BrokerPool] Failed to connect to seed broker, trying another broker from the list: Connection timeout","retryCount":6,"retryTime":5144}
+{"level":"ERROR","timestamp":"2026-04-07T18:01:28.136Z","logger":"kafkajs","message":"[Connection] Connection error: getaddrinfo ENOTFOUND kafka","broker":"kafka:9092","clientId":"uber-backend","stack":"Error: getaddrinfo ENOTFOUND kafka\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)"}
+{"level":"ERROR","timestamp":"2026-04-07T18:01:28.180Z","logger":"kafkajs","message":"[Connection] Connection error: getaddrinfo ENOTFOUND kafka","broker":"kafka:9092","clientId":"uber-backend","stack":"Error: getaddrinfo ENOTFOUND kafka\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)"}
+{"level":"ERROR","timestamp":"2026-04-07T18:01:32.161Z","logger":"kafkajs","message":"[Connection] Connection error: getaddrinfo ENOTFOUND kafka","broker":"kafka:9092","clientId":"uber-backend","stack":"Error: getaddrinfo ENOTFOUND kafka\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)"}
+{"level":"ERROR","timestamp":"2026-04-07T18:01:33.601Z","logger":"kafkajs","message":"[Connection] Connection timeout","broker":"kafka:9092","clientId":"uber-backend"}
+{"level":"ERROR","timestamp":"2026-04-07T18:01:33.603Z","logger":"kafkajs","message":"[BrokerPool] Failed to connect to seed broker, trying another broker from the list: Connection timeout","retryCount":7,"retryTime":10156}
+{"level":"ERROR","timestamp":"2026-04-07T18:01:37.608Z","logger":"kafkajs","message":"[Connection] Connection error: getaddrinfo EAI_AGAIN kafka","broker":"kafka:9092","clientId":"uber-backend","stack":"Error: getaddrinfo EAI_AGAIN kafka\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)"}
+{"level":"ERROR","timestamp":"2026-04-07T18:01:44.760Z","logger":"kafkajs","message":"[Connection] Connection timeout","broker":"kafka:9092","clientId":"uber-backend"}
+{"level":"ERROR","timestamp":"2026-04-07T18:01:44.761Z","logger":"kafkajs","message":"[BrokerPool] Failed to connect to seed broker, trying another broker from the list: Connection timeout","retryCount":8,"retryTime":21752}
+❌ Failed to connect to Kafka KafkaJSNonRetriableError
+  Caused by: KafkaJSConnectionError: Connection timeout
+    at Timeout.onTimeout [as _onTimeout] (/app/node_modules/kafkajs/src/network/connection.js:223:23)
+    at listOnTimeout (node:internal/timers:581:17)
+    at process.processTimers (node:internal/timers:519:7) {
+  name: 'KafkaJSNumberOfRetriesExceeded',
+  retriable: false,
+  helpUrl: undefined,
+  retryCount: 8,
+  retryTime: 21752,
+  [cause]: KafkaJSConnectionError: Connection timeout
+      at Timeout.onTimeout [as _onTimeout] (/app/node_modules/kafkajs/src/network/connection.js:223:23)
+      at listOnTimeout (node:internal/timers:581:17)
+      at process.processTimers (node:internal/timers:519:7) {
+    retriable: true,
+    helpUrl: undefined,
+    broker: 'kafka:9092',
+    code: undefined,
+    [cause]: undefined
+  }
+}
+🚀 Server running on port 5000
+{"level":"ERROR","timestamp":"2026-04-07T18:01:48.764Z","logger":"kafkajs","message":"[Connection] Connection error: getaddrinfo EAI_AGAIN kafka","broker":"kafka:9092","clientId":"uber-backend","stack":"Error: getaddrinfo EAI_AGAIN kafka\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)"}
+🔌 New client connected: x-MTobd_5uQ1vjIxAAAB
+[Socket] Registered User 698f35370d3cb713d520c90c (USER) to socket x-MTobd_5uQ1vjIxAAAB
+🔌 New client connected: BM015BiQMxk5Sf77AAAD
+🔌 Client disconnected: x-MTobd_5uQ1vjIxAAAB
+🔌 Client disconnected: BM015BiQMxk5Sf77AAAD
