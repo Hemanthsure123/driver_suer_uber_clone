@@ -31,6 +31,7 @@ export default function UserDashboard() {
   const [assignedDriver, setAssignedDriver] = useState(null);
   const [currentRideId, setCurrentRideId] = useState(null);
   const [currentRidePayload, setCurrentRidePayload] = useState(null);
+  const [otpFromSocket, setOtpFromSocket] = useState(null); // OTP delivered via socket when email fails
 
   // Auto-retry polling when waiting for a driver
   useEffect(() => {
@@ -241,8 +242,12 @@ export default function UserDashboard() {
       setRideState("DRIVER_ASSIGNED");
     });
 
-    socket.on("driver-arrived", () => {
+    socket.on("driver-arrived", (data) => {
       setRideState("DRIVER_ARRIVED");
+      // If email delivery failed, backend sends OTP directly via socket
+      if (data && data.otp) {
+        setOtpFromSocket(data.otp);
+      }
     });
 
     socket.on("ride-started", () => {
@@ -378,10 +383,33 @@ export default function UserDashboard() {
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: '40px', marginBottom: '10px' }}>📍</div>
             <h2 style={{ margin: '0 0 10px 0', fontSize: '22px' }}>Your driver has arrived!</h2>
-            <p style={{ margin: '0 0 15px 0', color: '#555', fontSize: '15px' }}>For your safety, please check your email for the 6-digit OTP and provide it to the driver to start the trip.</p>
-            <div style={{ background: '#ffebee', color: '#c62828', padding: '10px', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold' }}>
-              Do not start the ride until OTP is verified.
-            </div>
+
+            {otpFromSocket ? (
+              // EMAIL FAILED — OTP delivered via socket, show it prominently on screen
+              <>
+                <p style={{ margin: '0 0 12px 0', color: '#555', fontSize: '14px' }}>
+                  ⚠️ Email delivery failed. Here is your OTP — show this to your driver:
+                </p>
+                <div style={{
+                  background: '#1a1a1a', color: '#fff', padding: '20px',
+                  borderRadius: '12px', fontSize: '38px', fontWeight: 'bold',
+                  letterSpacing: '10px', marginBottom: '12px'
+                }}>
+                  {otpFromSocket}
+                </div>
+                <div style={{ background: '#fff3cd', color: '#856404', padding: '10px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold' }}>
+                  Show this OTP to your driver to start the trip.
+                </div>
+              </>
+            ) : (
+              // EMAIL SENT — normal flow
+              <>
+                <p style={{ margin: '0 0 15px 0', color: '#555', fontSize: '15px' }}>For your safety, please check your email for the 6-digit OTP and provide it to the driver to start the trip.</p>
+                <div style={{ background: '#ffebee', color: '#c62828', padding: '10px', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold' }}>
+                  Do not start the ride until OTP is verified.
+                </div>
+              </>
+            )}
           </div>
         )}
 

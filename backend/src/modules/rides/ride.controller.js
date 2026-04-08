@@ -186,37 +186,43 @@ export const driverArrived = async (req, res) => {
         // Generate OTP
         const otp = generateOtp();
         
-        // Update Ride State
+        // Update Ride State FIRST — ride proceeds regardless of email outcome
         ride.rideStatus = "driver_arrived";
-        ride.otpCode = otp; // Store plain/hashed depending on your security policy, plain here for simplicity context
+        ride.otpCode = otp;
         ride.otpExpiration = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
         await ride.save();
 
-        // Send OTP Email — do NOT swallow this error silently
+        // Notify User Socket — driver has arrived
+        const io = getIo();
+        const userSocketId = await redisClient.get(`user_socket:${ride.userId}`);
+
+        // Attempt email — non-blocking, never fail the ride flow
+        let emailDelivered = false;
         try {
             await sendEmail(user.email, otp);
-            console.log(`[driverArrived] OTP email sent successfully to ${user.email}`);
+            console.log(`[driverArrived] ✅ OTP email sent to ${user.email}`);
+            emailDelivered = true;
         } catch (emailErr) {
-            console.error(`[driverArrived] ❌ SMTP FAILED for ${user.email}:`, emailErr.message);
-            // Revert ride state so driver can retry
-            ride.rideStatus = "driver_assigned";
-            ride.otpCode = null;
-            ride.otpExpiration = null;
-            await ride.save();
-            return res.status(500).json({
-                error: "Failed to send OTP email. Please check SMTP credentials.",
-                detail: emailErr.message
+            console.error(`[driverArrived] ❌ SMTP failed for ${user.email}: ${emailErr.message}`);
+            console.error(`[driverArrived] ⚠️  Falling back to socket OTP delivery`);
+        }
+
+        // Always notify user socket about driver arrival
+        if (userSocketId) {
+            io.to(userSocketId).emit("driver-arrived", {
+                rideId: ride._id,
+                // If email failed, push OTP directly to user's screen via socket
+                otp: emailDelivered ? undefined : otp,
+                emailDelivered
             });
         }
 
-        // Notify User Socket
-        const io = getIo();
-        const userSocketId = await redisClient.get(`user_socket:${ride.userId}`);
-        if (userSocketId) {
-            io.to(userSocketId).emit("driver-arrived", { rideId: ride._id });
-        }
+        return res.json({
+            message: emailDelivered
+                ? "Arrived event logged. OTP sent to user's email."
+                : "Arrived event logged. OTP delivered via app (email failed — check SMTP credentials)."
+        });
 
-        return res.json({ message: "Arrived event logged. OTP sent to user." });
 
     } catch (err) {
         console.error("Driver Arrive Error:", err);
