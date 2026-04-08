@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 import { SOCKET_URL } from "../../config";
 import { useNavigate } from 'react-router-dom';
-import { acceptRide, driverArrived, verifyOtp, getActiveRide } from "../../api/ride.api";
+import { acceptRide, driverArrived, verifyOtp, getActiveRide, completeRide } from "../../api/ride.api";
 
 // ✅ Connect to Backend
 const socket = io(SOCKET_URL);
@@ -276,13 +276,18 @@ export default function DriverDashboard() {
   };
 
   const handleCompleteRide = async () => {
-     // A placeholder for the End Ride capability
-     alert("Ride Completed Successfully! Payment Processed.");
-     if (directionsRendererRef.current) {
-         directionsRendererRef.current.setDirections({ routes: [] });
+     try {
+         if (!activeRide) return;
+         await completeRide(activeRide.rideId);
+         alert("Ride Completed Successfully! Payment Processed.");
+         if (directionsRendererRef.current) {
+             directionsRendererRef.current.setDirections({ routes: [] });
+         }
+         setDriverState("ONLINE");
+         setActiveRide(null);
+     } catch (err) {
+         alert(err.response?.data?.error || "Failed to complete ride");
      }
-     setDriverState("ONLINE");
-     setActiveRide(null);
   };
 
   const handleLogout = () => {

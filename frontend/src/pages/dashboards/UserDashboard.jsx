@@ -223,6 +223,8 @@ export default function UserDashboard() {
       socket.off("ride-accepted");
       socket.off("driver-arrived");
       socket.off("ride-started");
+      socket.off("ride-completed");
+      socket.off("ride-cancelled");
     };
   }, []);
 
@@ -387,6 +389,32 @@ export default function UserDashboard() {
 
     socket.on("ride-started", () => {
       setRideState("RIDE_STARTED");
+    });
+
+    socket.on("ride-completed", () => {
+      alert("You have reached your destination. Payment processed.");
+      setRideState("IDLE");
+      setCurrentRideId(null);
+      setCurrentRidePayload(null);
+      setRouteDetails(null);
+      setFareAmount(0);
+      setAssignedDriver(null);
+      if (directionsRendererRef.current) {
+          directionsRendererRef.current.setDirections({ routes: [] });
+      }
+    });
+
+    socket.on("ride-cancelled", () => {
+      alert("Your ride was cancelled by the driver or system.");
+      setRideState("IDLE");
+      setCurrentRideId(null);
+      setCurrentRidePayload(null);
+      setRouteDetails(null);
+      setFareAmount(0);
+      setAssignedDriver(null);
+      if (directionsRendererRef.current) {
+          directionsRendererRef.current.setDirections({ routes: [] });
+      }
     });
   };
 
