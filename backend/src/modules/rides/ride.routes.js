@@ -4,7 +4,6 @@ import {
   acceptRide,
   driverArrived,
   verifyOtp,
-  verifyOtp,
   completeRide,
   cancelRide,
   getActiveRide,
