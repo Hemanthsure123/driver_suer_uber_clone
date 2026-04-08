@@ -397,10 +397,44 @@ export const getActiveRide = async (req, res) => {
             "ride_started"
         ];
         
-        let ride = await Ride.findOne({
+        // Find all active rides mapped to this user, sorted perfectly from newest to oldest
+        let activeRides = await Ride.find({
             $or: [{ userId }, { driverId: userId }],
             rideStatus: { $in: activeStatuses }
-        }).populate("userId", "fullName phone email");
+        }).sort({ createdAt: -1 }).populate("userId", "fullName phone email");
+
+        let ride = null;
+        let ghostRides = [];
+
+        if (activeRides.length > 0) {
+            // Cutoff: Any ride that hasn't fired a state transition in > 12 hours is definitely an abandoned ghost-ride from a broken test run.
+            const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
+            
+            if (activeRides[0].updatedAt < twelveHoursAgo) {
+                ghostRides = activeRides; 
+                ride = null;
+            } else {
+                ride = activeRides[0];
+                ghostRides = activeRides.slice(1);
+            }
+        }
+
+        // 🧹 GHOST RIDE CLEANUP ENGINE
+        if (ghostRides.length > 0) {
+            for (const ghost of ghostRides) {
+                ghost.rideStatus = "cancelled";
+                await ghost.save();
+                
+                // Critically: Un-brick the driver's availability lock in the database!
+                if (ghost.driverId) {
+                    await Driver.findOneAndUpdate(
+                        { userId: ghost.driverId },
+                        { $set: { isAvailable: true } }
+                    );
+                }
+            }
+            console.log(`[Cleaner] Auto-purged ${ghostRides.length} historical ghost rides for user ${userId}. Freeing drivers.`);
+        }
 
         if (!ride) {
             return res.json({ ride: null });

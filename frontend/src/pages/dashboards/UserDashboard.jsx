@@ -68,9 +68,16 @@ export default function UserDashboard() {
              setRideState("RIDE_STARTED");
           }
 
-          if (ride.pickupLocation && ride.dropLocation && pickupInputRef.current && dropInputRef.current) {
-             pickupInputRef.current.value = ride.pickupLocation.address;
-             dropInputRef.current.value = ride.dropLocation.address;
+          if (ride.pickupLocation && ride.dropLocation) {
+             setCurrentRidePayload({
+                 pickup: ride.pickupLocation,
+                 drop: ride.dropLocation
+             });
+             
+             if (pickupInputRef.current && dropInputRef.current) {
+                 pickupInputRef.current.value = ride.pickupLocation.address;
+                 dropInputRef.current.value = ride.dropLocation.address;
+             }
           }
         }
       } catch (err) {
@@ -529,12 +536,11 @@ export default function UserDashboard() {
       )}
 
       {/* 🟢 DYNAMIC FLOATING PANEL based on State */}
-      {!isSelectingDropMap && (
       <div style={{
         position: 'absolute', bottom: '40px', left: '50%', transform: 'translateX(-50%)',
         zIndex: 1000, backgroundColor: 'white', padding: '25px', borderRadius: '16px',
         boxShadow: '0 10px 30px rgba(0,0,0,0.2)', width: '90%', maxWidth: '450px',
-        display: 'flex', flexDirection: 'column', gap: '15px'
+        display: isSelectingDropMap ? 'none' : 'flex', flexDirection: 'column', gap: '15px'
       }}>
         
         {/* PHASE: IDLE / ROUTE_PREVIEW (Search Box) */}
@@ -662,12 +668,11 @@ export default function UserDashboard() {
             <div style={{ fontSize: '40px', marginBottom: '10px' }}>🚗</div>
             <h2 style={{ margin: '0 0 15px 0', fontSize: '22px' }}>You are on your way!</h2>
             {renderDriverProfile()}
-            <p style={{ margin: '0', color: '#555', fontSize: '15px' }}>Enjoy your ride to {dropInputRef.current?.value}.</p>
+            <p style={{ margin: '0', color: '#555', fontSize: '15px' }}>Enjoy your ride to {currentRidePayload?.drop?.address || "your destination"}.</p>
           </div>
         )}
-
       </div>
-      )}
+
     </div>
   );
 }
