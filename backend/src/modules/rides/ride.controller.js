@@ -407,10 +407,10 @@ export const getActiveRide = async (req, res) => {
         let ghostRides = [];
 
         if (activeRides.length > 0) {
-            // Cutoff: Any ride that hasn't fired a state transition in > 12 hours is definitely an abandoned ghost-ride from a broken test run.
-            const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
+            // Cutoff: Any ride that hasn't fired a state transition in > 3 minutes is instantly purged. (Aggressive cleaner to flush out broken manual test rides)
+            const strictTimeout = new Date(Date.now() - 3 * 60 * 1000);
             
-            if (activeRides[0].updatedAt < twelveHoursAgo) {
+            if (activeRides[0].updatedAt < strictTimeout) {
                 ghostRides = activeRides; 
                 ride = null;
             } else {
