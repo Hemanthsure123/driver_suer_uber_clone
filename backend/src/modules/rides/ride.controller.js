@@ -275,10 +275,10 @@ export const completeRide = async (req, res) => {
         ride.rideStatus = "completed";
         await ride.save();
 
-        // CRITICAL: Reset driver availability so they can receive future ride requests
+        // A. CRITICAL: Reset driver availability so they can receive future ride requests
         await Driver.findOneAndUpdate(
             { userId: driverUserId },
-            { isAvailable: true }
+            { $set: { isAvailable: true } }
         );
 
         // Notify user that ride is done
@@ -294,5 +294,63 @@ export const completeRide = async (req, res) => {
     } catch (err) {
         console.error("Complete Ride Error:", err);
         return res.status(500).json({ error: "Failed to complete ride" });
+    }
+};
+
+/**
+ * USER or DRIVER: Cancel a ride
+ * B. Resets driver availability immediately so they are not permanently stuck
+ */
+export const cancelRide = async (req, res) => {
+    try {
+        const rideId = req.params.id;
+        const requesterId = req.user.sub;
+
+        // Allow cancellation in early states only
+        const cancellableStatuses = ["requested", "driver_assigned", "driver_arrived"];
+        const ride = await Ride.findOne({ _id: rideId, rideStatus: { $in: cancellableStatuses } });
+
+        if (!ride) {
+            return res.status(404).json({ error: "No cancellable ride found with this ID" });
+        }
+
+        // Security: Only the ride's user OR the assigned driver can cancel
+        const isUser = ride.userId.toString() === requesterId;
+        const isDriver = ride.driverId && ride.driverId.toString() === requesterId;
+        if (!isUser && !isDriver) {
+            return res.status(403).json({ error: "Not authorized to cancel this ride" });
+        }
+
+        ride.rideStatus = "cancelled";
+        await ride.save();
+
+        // B. If a driver was already assigned, free them immediately
+        if (ride.driverId) {
+            await Driver.findOneAndUpdate(
+                { userId: ride.driverId },
+                { $set: { isAvailable: true } }
+            );
+            console.log(`[RideCancel] Ride ${rideId} cancelled. Driver ${ride.driverId} freed (isAvailable=true).`);
+
+            // Notify driver socket about the cancellation
+            const io = getIo();
+            const driverSocketId = await redisClient.get(`driver_socket:${ride.driverId.toString()}`);
+            if (driverSocketId) {
+                io.to(driverSocketId).emit("ride-cancelled", { rideId: ride._id });
+            }
+        }
+
+        // Notify user socket
+        const io = getIo();
+        const userSocketId = await redisClient.get(`user_socket:${ride.userId}`);
+        if (userSocketId) {
+            io.to(userSocketId).emit("ride-cancelled", { rideId: ride._id });
+        }
+
+        return res.json({ message: "Ride cancelled successfully", ride });
+
+    } catch (err) {
+        console.error("Cancel Ride Error:", err);
+        return res.status(500).json({ error: "Failed to cancel ride" });
     }
 };

@@ -4,7 +4,8 @@ import {
   acceptRide,
   driverArrived,
   verifyOtp,
-  completeRide
+  completeRide,
+  cancelRide
 } from "./ride.controller.js";
 import { authenticate } from "../../middlewares/auth.middleware.js";
 
@@ -12,6 +13,7 @@ const router = express.Router();
 
 // User APIs
 router.post("/book", authenticate, bookRide);
+router.post("/:id/cancel", authenticate, cancelRide); // User or Driver can cancel
 
 // Driver APIs
 router.post("/:id/accept", authenticate, acceptRide);

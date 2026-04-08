@@ -122,6 +122,23 @@ export const initializeSocket = (server) => {
                     await redisClient.zrem("drivers:online", driverId);
                     await redisClient.del(`driver_socket:${driverId}`);
                     await redisClient.del(`socket_driver:${socket.id}`);
+                    
+                    // ─────────────────────────────────────────────────────
+                    // C. DRIVER STATE RECOVERY ON DISCONNECT
+                    // If driver disconnects while marked unavailable (e.g. mid-ride
+                    // crash, app refresh, network drop) — free them immediately.
+                    // Without this, they stay stuck as isAvailable=false forever.
+                    // ─────────────────────────────────────────────────────
+                    const Driver = (await import("./modules/drivers/driver.model.js")).default;
+                    const updated = await Driver.findOneAndUpdate(
+                        { userId: driverId, isAvailable: false },
+                        { $set: { isAvailable: true } },
+                        { new: true }
+                    );
+                    if (updated) {
+                        console.log(`[Socket] Driver ${driverId} was unavailable on disconnect — reset to isAvailable=true`);
+                    }
+                    
                     console.log(`[Socket] Driver ${driverId} removed from online GEO store.`);
                 }
                 
