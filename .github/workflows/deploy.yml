@@ -21,6 +21,16 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd ~/driver_suer_uber_clone
-            git pull origin main
+
+            echo "📥 Fetching latest code..."
+            git fetch origin
+
+            echo "🔄 Resetting to latest commit..."
+            git reset --hard origin/main
+
+            echo "🧹 Cleaning untracked files..."
+            git clean -fd
+
+            echo "🐳 Restarting containers..."
             docker-compose down
             docker-compose up --build -d
