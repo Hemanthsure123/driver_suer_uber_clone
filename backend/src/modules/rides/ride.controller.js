@@ -192,8 +192,22 @@ export const driverArrived = async (req, res) => {
         ride.otpExpiration = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
         await ride.save();
 
-        // Send Email
-        await sendEmail(user.email, otp).catch(e => console.error("OTP Email Error (ignored):", e));
+        // Send OTP Email — do NOT swallow this error silently
+        try {
+            await sendEmail(user.email, otp);
+            console.log(`[driverArrived] OTP email sent successfully to ${user.email}`);
+        } catch (emailErr) {
+            console.error(`[driverArrived] ❌ SMTP FAILED for ${user.email}:`, emailErr.message);
+            // Revert ride state so driver can retry
+            ride.rideStatus = "driver_assigned";
+            ride.otpCode = null;
+            ride.otpExpiration = null;
+            await ride.save();
+            return res.status(500).json({
+                error: "Failed to send OTP email. Please check SMTP credentials.",
+                detail: emailErr.message
+            });
+        }
 
         // Notify User Socket
         const io = getIo();

@@ -4,12 +4,15 @@ import env from "./env.js";
 export const mailTransporter = nodemailer.createTransport({
   host: env.smtp.host,
   port: env.smtp.port,
-  secure: env.smtp.port === 465, // true for 465, false for 587
+  secure: env.smtp.port === 465,   // true only for 465 (SSL), false for 587 (STARTTLS)
+  requireTLS: env.smtp.port === 587, // Force STARTTLS upgrade on port 587 (Gmail requirement)
   auth: {
     user: env.smtp.user,
     pass: env.smtp.pass
   },
   tls: {
-    rejectUnauthorized: false // Bypass self-signed certificate errors (common in corporate proxies/local dev)
-  }
+    rejectUnauthorized: false
+  },
+  connectionTimeout: 10000, // 10s — prevent silent hang
+  greetingTimeout: 10000
 });
