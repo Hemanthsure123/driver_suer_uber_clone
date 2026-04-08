@@ -7,7 +7,8 @@ import {
   completeRide,
   cancelRide,
   getActiveRide,
-  resendOtp
+  resendOtp,
+  getRideHistory
 } from "./ride.controller.js";
 import { authenticate } from "../../middlewares/auth.middleware.js";
 
@@ -15,6 +16,7 @@ const router = express.Router();
 
 // General Active State API
 router.get("/active", authenticate, getActiveRide);
+router.get("/history", authenticate, getRideHistory);
 
 // User APIs
 router.post("/book", authenticate, bookRide);

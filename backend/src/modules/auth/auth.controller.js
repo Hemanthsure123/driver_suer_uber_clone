@@ -259,3 +259,30 @@ export const login = async (req, res) => {
     return res.status(500).json({ error: "Login failed" });
   }
 };
+
+/**
+ * ============================
+ * GET CURRENT FETCH (ME)
+ * ============================
+ */
+export const getMe = async (req, res) => {
+  try {
+    const userId = req.user.sub;
+    const role = req.user.role;
+
+    const user = await User.findById(userId).select("-passwordHash");
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    if (role === "DRIVER") {
+      const driver = await Driver.findOne({ userId });
+      return res.json({ user, driver });
+    }
+
+    return res.json({ user });
+  } catch (err) {
+    console.error("GetMe error:", err);
+    return res.status(500).json({ error: "Failed to fetch profile" });
+  }
+};

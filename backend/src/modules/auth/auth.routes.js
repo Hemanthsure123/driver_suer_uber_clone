@@ -1,5 +1,5 @@
 import express from "express";
-import { signup, verifyOtp, login } from "./auth.controller.js";
+import { signup, verifyOtp, login, getMe } from "./auth.controller.js";
 
 const router = express.Router();
 
@@ -7,5 +7,8 @@ const router = express.Router();
 router.post("/signup", signup);
 router.post("/verify-otp", verifyOtp);
 router.post("/login", login);
+// PRIVATE ROUTES
+import { authenticate } from "../../middlewares/auth.middleware.js";
+router.get("/me", authenticate, getMe);
 
 export default router;

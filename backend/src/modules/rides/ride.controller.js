@@ -511,3 +511,30 @@ export const resendOtp = async (req, res) => {
         return res.status(500).json({ error: "Failed to resend OTP" });
     }
 };
+
+/**
+ * BOTH: Get Historical Rides
+ */
+export const getRideHistory = async (req, res) => {
+    try {
+        const userId = req.user.sub;
+        
+        // Find all rides that are no longer active
+        const historyStatuses = [
+            "ride_completed",
+            "completed", // Just in case of older records
+            "cancelled"
+        ];
+        
+        let rides = await Ride.find({
+            $or: [{ userId }, { driverId: userId }],
+            rideStatus: { $in: historyStatuses }
+        }).sort({ createdAt: -1 });
+
+        return res.json({ rides });
+
+    } catch (err) {
+        console.error("Get Ride History Error:", err);
+        return res.status(500).json({ error: "Failed to fetch ride history" });
+    }
+};

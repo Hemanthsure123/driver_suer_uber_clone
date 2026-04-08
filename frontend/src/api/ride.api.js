@@ -9,6 +9,7 @@ const getAuthHeaders = () => ({
 
 // General Active State API
 export const getActiveRide = () => API.get("/rides/active", getAuthHeaders());
+export const getRideHistory = () => API.get("/rides/history", getAuthHeaders());
 
 // User APIs
 export const bookRide = (data) => API.post("/rides/book", data, getAuthHeaders());

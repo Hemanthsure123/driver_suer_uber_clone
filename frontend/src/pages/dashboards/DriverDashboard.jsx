@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 import { SOCKET_URL } from "../../config";
 import { useNavigate } from 'react-router-dom';
-import { acceptRide, driverArrived, verifyOtp, getActiveRide, completeRide } from "../../api/ride.api";
-
+import { acceptRide, driverArrived, verifyOtp, getActiveRide, completeRide, getRideHistory } from "../../api/ride.api";
+import { getMe } from "../../api/auth.api";
 // ✅ Connect to Backend
 const socket = io(SOCKET_URL);
 
@@ -24,6 +24,11 @@ export default function DriverDashboard() {
   const [incomingRide, setIncomingRide] = useState(null);
   const [activeRide, setActiveRide] = useState(null);
   const [otpInput, setOtpInput] = useState("");
+
+  // Profile & History State
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [userProfile, setUserProfile] = useState(null);
+  const [rideHistory, setRideHistory] = useState([]);
 
   // --- STATE RECOVERY ON MOUNT ---
   useEffect(() => {
@@ -212,6 +217,19 @@ export default function DriverDashboard() {
 
   // --- ACTIONS ---
 
+  const handleOpenProfile = async () => {
+    setIsProfileOpen(true);
+    try {
+        const profileRes = await getMe();
+        // Since driver calls getMe, it returns { user, driver }
+        setUserProfile(profileRes.data);
+        const historyRes = await getRideHistory();
+        setRideHistory(historyRes.data.rides || []);
+    } catch (err) {
+        console.error("Failed to fetch profile/history", err);
+    }
+  };
+
   const calculateRoute = (originLat, originLng, destLat, destLng) => {
     if (!directionsServiceRef.current) return;
     const request = {
@@ -299,6 +317,77 @@ export default function DriverDashboard() {
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 0, display: 'flex', flexDirection: 'column' }}>
       
+      {/* 🟢 HAMBURGER MENU BUTTON */}
+      <button
+        onClick={handleOpenProfile}
+        style={{
+          position: 'absolute', top: '20px', left: '20px', zIndex: 1001,
+          width: '45px', height: '45px', backgroundColor: 'white', border: 'none',
+          borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center',
+          justifyContent: 'center', boxShadow: '0 2px 10px rgba(0,0,0,0.2)'
+        }}
+      >
+        <span style={{ fontSize: '24px', color: '#111' }}>☰</span>
+      </button>
+
+      {/* 🟢 SIDE PROFILE DRAWER */}
+      <div style={{
+         position: 'fixed', top: 0, left: isProfileOpen ? 0 : '-320px', width: '320px', height: '100vh',
+         backgroundColor: '#111', color: '#fff', zIndex: 10000, transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+         boxShadow: isProfileOpen ? '10px 0 30px rgba(0,0,0,0.5)' : 'none', display: 'flex', flexDirection: 'column', boxSizing: 'border-box'
+      }}>
+         {/* Drawer Header */}
+         <div style={{ padding: '40px 20px 30px 20px', borderBottom: '1px solid #333', position: 'relative' }}>
+             <button onClick={() => setIsProfileOpen(false)} style={{ position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', color: '#888', fontSize: '24px', cursor: 'pointer' }}>✕</button>
+             {userProfile && userProfile.driver ? (
+                 <div style={{ display: 'flex', alignItems: 'center', marginTop: '10px' }}>
+                    <div style={{ width: '60px', height: '60px', borderRadius: '50%', overflow: 'hidden', marginRight: '15px', background: '#333', flexShrink: 0 }}>
+                        <img src={`https://api.dicebear.com/7.x/initials/svg?seed=${userProfile.driver.fullName}&backgroundColor=ffffff&textColor=000000`} alt="Avatar" style={{ width: '100%', height: '100%' }} />
+                    </div>
+                    <div style={{ overflow: 'hidden' }}>
+                        <div style={{ fontSize: '18px', fontWeight: 'bold', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{userProfile.driver.fullName}</div>
+                        <div style={{ fontSize: '12px', color: '#aaa', marginTop: '4px', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{userProfile.user.email}</div>
+                        <div style={{ fontSize: '11px', background: '#333', display: 'inline-block', padding: '2px 8px', borderRadius: '10px', marginTop: '6px' }}>
+                           {userProfile.driver.vehicle?.brand} {userProfile.driver.vehicle?.model} • {userProfile.driver.vehicle?.rcNumber}
+                        </div>
+                    </div>
+                 </div>
+             ) : (
+                 <div style={{ display: 'flex', alignItems: 'center', marginTop: '10px' }}>Loading...</div>
+             )}
+         </div>
+         
+         {/* History Render */}
+         <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
+             <h3 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#888', textTransform: 'uppercase', letterSpacing: '1px' }}>Past Trips (Driver)</h3>
+             {rideHistory.length === 0 ? (
+                 <div style={{ color: '#555', fontSize: '14px', textAlign: 'center', marginTop: '30px' }}>No past trips found.</div>
+             ) : (
+                 rideHistory.map(ride => (
+                     <div key={ride._id} style={{ background: '#222', borderRadius: '12px', padding: '15px', marginBottom: '15px' }}>
+                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                             <span style={{ fontSize: '12px', color: '#888' }}>{new Date(ride.createdAt).toLocaleDateString()}</span>
+                             <span style={{ fontWeight: 'bold', color: ride.rideStatus === 'cancelled' ? '#ff4d4f' : '#00e676' }}>
+                                 {ride.rideStatus === 'cancelled' ? 'Cancelled' : `+ ₹${ride.fareAmount}`}
+                             </span>
+                         </div>
+                         <div style={{ fontSize: '13px', marginBottom: '8px', display: 'flex', alignItems: 'flex-start' }}>
+                             <div style={{ marginRight: '8px' }}>🟢</div>
+                             <div style={{ color: '#ddd', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ride.pickupLocation?.address}</div>
+                         </div>
+                         <div style={{ fontSize: '13px', display: 'flex', alignItems: 'flex-start' }}>
+                             <div style={{ marginRight: '8px' }}>📍</div>
+                             <div style={{ color: '#ddd', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ride.dropLocation?.address}</div>
+                         </div>
+                     </div>
+                 ))
+             )}
+         </div>
+      </div>
+      
+      {/* Dark overlay block when profile is open */}
+      {isProfileOpen && <div onClick={() => setIsProfileOpen(false)} style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.5)', zIndex: 9999 }}></div>}
+
       <button
         onClick={handleLogout}
         style={{
