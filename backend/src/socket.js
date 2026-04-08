@@ -22,6 +22,14 @@ export const initializeSocket = (server) => {
             if (userId) {
                 await redisClient.set(`socket_user:${socket.id}`, userId);
                 await redisClient.set(`user_socket:${userId}`, socket.id);
+                
+                // If a driver joins, also register driver_socket immediately
+                // so ride-request can be emitted before first location update
+                if (role === 'DRIVER') {
+                    await redisClient.set(`driver_socket:${userId}`, socket.id);
+                    await redisClient.set(`socket_driver:${socket.id}`, userId);
+                }
+                
                 console.log(`[Socket] Registered User ${userId} (${role}) to socket ${socket.id}`);
             }
         });
@@ -87,11 +95,14 @@ export const initializeSocket = (server) => {
                     const Driver = (await import("./modules/drivers/driver.model.js")).default;
                     const availableDrivers = await Driver.find({
                         userId: { $in: nearbyDriverIds },
-                        isAvailable: { $ne: false }
+                        isAvailable: { $ne: false },
+                        adminStatus: "APPROVED"
                     });
 
                     for (const driver of availableDrivers) {
-                        const driverSocketId = await redisClient.get(`driver_socket:${driver.userId}`);
+                        // IMPORTANT: driver.userId is ObjectId — must stringify for Redis key
+                        const driverUserIdStr = driver.userId.toString();
+                        const driverSocketId = await redisClient.get(`driver_socket:${driverUserIdStr}`);
                         if (driverSocketId) {
                             io.to(driverSocketId).emit("ride-request", { rideId, pickup, drop, distanceKm, fareAmount });
                         }

@@ -59,23 +59,29 @@ export const bookRide = async (req, res) => {
             });
         }
 
-        // 3. Filter drivers by availability from MongoDB (Optional but secure vs race conditions)
+        // 3. Filter drivers by availability from MongoDB (secure vs race conditions)
+        // Only show APPROVED drivers with isAvailable not explicitly false
         console.log(`[RideBooking] GEORADIUS match around [${lon}, ${lat}]: ${nearbyDriverIds}`);
         
         const availableDrivers = await Driver.find({
             userId: { $in: nearbyDriverIds },
-            // If isAvailable wasn't explicitly set to false, treat as true (legacy driver support)
-            isAvailable: { $ne: false }
+            isAvailable: { $ne: false },
+            adminStatus: "APPROVED"
         });
 
         console.log(`[RideBooking] DB valid drivers left: ${availableDrivers.length}`);
+        if (availableDrivers.length === 0) {
+            console.log(`[RideBooking] ⚠️  Reason: drivers may have isAvailable=false (from prior ride) or adminStatus≠APPROVED`);
+        }
 
         // 4. Broadcast to those specific available drivers via Socket
         const io = getIo();
         let pingCount = 0;
         for (const driver of availableDrivers) {
-            const socketId = await redisClient.get(`driver_socket:${driver.userId}`);
-            console.log(`[RideBooking] Attempting to ping Driver ${driver.userId} on socket ${socketId}`);
+            // IMPORTANT: driver.userId is a Mongoose ObjectId — must convert to string for Redis key lookup
+            const driverUserIdStr = driver.userId.toString();
+            const socketId = await redisClient.get(`driver_socket:${driverUserIdStr}`);
+            console.log(`[RideBooking] Attempting to ping Driver ${driverUserIdStr} on socket ${socketId}`);
             if (socketId) {
                 // Emit standard ride request
                 io.to(socketId).emit("ride-request", {
@@ -86,6 +92,8 @@ export const bookRide = async (req, res) => {
                     fareAmount
                 });
                 pingCount++;
+            } else {
+                console.log(`[RideBooking] ⚠️  Driver ${driverUserIdStr} has no active socket (offline or not connected)`);
             }
         }
 
@@ -248,5 +256,45 @@ export const verifyOtp = async (req, res) => {
     } catch (err) {
         console.error("Verify Trip OTP Error:", err);
         return res.status(500).json({ error: "Failed to verify OTP" });
+    }
+};
+
+/**
+ * DRIVER: Complete the ride
+ * Marks ride as completed and frees the driver for new bookings
+ */
+export const completeRide = async (req, res) => {
+    try {
+        const rideId = req.params.id;
+        const driverUserId = req.user.sub;
+
+        const ride = await Ride.findOne({ _id: rideId, driverId: driverUserId, rideStatus: "ride_started" });
+        if (!ride) {
+            return res.status(404).json({ error: "No active ride found in 'ride_started' state for this driver" });
+        }
+
+        // Mark ride as completed
+        ride.rideStatus = "completed";
+        await ride.save();
+
+        // CRITICAL: Reset driver availability so they can receive future ride requests
+        await Driver.findOneAndUpdate(
+            { userId: driverUserId },
+            { isAvailable: true }
+        );
+
+        // Notify user that ride is done
+        const io = getIo();
+        const userSocketId = await redisClient.get(`user_socket:${ride.userId}`);
+        if (userSocketId) {
+            io.to(userSocketId).emit("ride-completed", { rideId: ride._id });
+        }
+
+        console.log(`[RideComplete] Driver ${driverUserId} completed ride ${rideId}. Driver is now available again.`);
+        return res.json({ message: "Ride completed successfully", ride });
+
+    } catch (err) {
+        console.error("Complete Ride Error:", err);
+        return res.status(500).json({ error: "Failed to complete ride" });
     }
 };

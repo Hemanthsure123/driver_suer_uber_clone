@@ -3,7 +3,8 @@ import {
   bookRide,
   acceptRide,
   driverArrived,
-  verifyOtp
+  verifyOtp,
+  completeRide
 } from "./ride.controller.js";
 import { authenticate } from "../../middlewares/auth.middleware.js";
 
@@ -16,5 +17,6 @@ router.post("/book", authenticate, bookRide);
 router.post("/:id/accept", authenticate, acceptRide);
 router.post("/:id/arrived", authenticate, driverArrived);
 router.post("/:id/verify-otp", authenticate, verifyOtp);
+router.post("/:id/complete", authenticate, completeRide);
 
 export default router;
