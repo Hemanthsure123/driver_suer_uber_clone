@@ -299,7 +299,7 @@ export const completeRide = async (req, res) => {
         }
 
         // Mark ride as completed
-        ride.rideStatus = "completed";
+        ride.rideStatus = "ride_completed";
         await ride.save();
 
         // A. CRITICAL: Reset driver availability so they can receive future ride requests
