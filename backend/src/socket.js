@@ -95,8 +95,7 @@ export const initializeSocket = (server) => {
                     const Driver = (await import("./modules/drivers/driver.model.js")).default;
                     const availableDrivers = await Driver.find({
                         userId: { $in: nearbyDriverIds },
-                        isAvailable: { $ne: false },
-                        adminStatus: "APPROVED"
+                        isAvailable: { $ne: false }
                     });
 
                     for (const driver of availableDrivers) {

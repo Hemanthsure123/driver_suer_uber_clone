@@ -59,19 +59,17 @@ export const bookRide = async (req, res) => {
             });
         }
 
-        // 3. Filter drivers by availability from MongoDB (secure vs race conditions)
-        // Only show APPROVED drivers with isAvailable not explicitly false
+        // 3. Filter drivers by availability from MongoDB (guards against race conditions)
         console.log(`[RideBooking] GEORADIUS match around [${lon}, ${lat}]: ${nearbyDriverIds}`);
         
         const availableDrivers = await Driver.find({
             userId: { $in: nearbyDriverIds },
-            isAvailable: { $ne: false },
-            adminStatus: "APPROVED"
+            isAvailable: { $ne: false }
         });
 
         console.log(`[RideBooking] DB valid drivers left: ${availableDrivers.length}`);
         if (availableDrivers.length === 0) {
-            console.log(`[RideBooking] ⚠️  Reason: drivers may have isAvailable=false (from prior ride) or adminStatus≠APPROVED`);
+            console.log(`[RideBooking] ⚠️  All Redis drivers were filtered out. Reason: isAvailable=false (stuck from a prior accepted ride). Reset required.`);
         }
 
         // 4. Broadcast to those specific available drivers via Socket
