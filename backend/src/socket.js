@@ -64,53 +64,8 @@ export const initializeSocket = (server) => {
         });
 
         /**
-         * RIDE MATCHING LOOP USING GEOHASH CHUNKING
-         * Users trigger this while waiting for a driver to periodically scan Redis
+         * RIDE MATCHING LOOP - Now handled strictly by backend background service
          */
-        socket.on("retry-match", async ({ rideId, pickup, drop, distanceKm, fareAmount }) => {
-            try {
-                const { default: geohash } = await import('ngeohash');
-                const [lon, lat] = pickup.coordinates;
-                
-                // 1. Calculate precise grid hash
-                const hash = geohash.encode(lat, lon, 5);
-                
-                // 2. Fetch the 8 mathematical neighbors without computing dynamic geometry
-                const gridsToScan = [hash, ...geohash.neighbors(hash)];
-                
-                // 3. Pull from Redis O(1) sets concurrently
-                const results = await Promise.all(
-                    gridsToScan.map(grid => redisClient.smembers(`grid:${grid}`))
-                );
-                
-                let nearbyDriverIds = [];
-                results.forEach(gridDrivers => {
-                    nearbyDriverIds.push(...gridDrivers);
-                });
-                
-                // Remove duplicates if edge cases triggered overlaps
-                nearbyDriverIds = [...new Set(nearbyDriverIds)];
-                
-                if (nearbyDriverIds.length > 0) {
-                    const Driver = (await import("./modules/drivers/driver.model.js")).default;
-                    const availableDrivers = await Driver.find({
-                        userId: { $in: nearbyDriverIds },
-                        isAvailable: { $ne: false }
-                    });
-
-                    for (const driver of availableDrivers) {
-                        // IMPORTANT: driver.userId is ObjectId — must stringify for Redis key
-                        const driverUserIdStr = driver.userId.toString();
-                        const driverSocketId = await redisClient.get(`driver_socket:${driverUserIdStr}`);
-                        if (driverSocketId) {
-                            io.to(driverSocketId).emit("ride-request", { rideId, pickup, drop, distanceKm, fareAmount });
-                        }
-                    }
-                }
-            } catch (err) {
-                console.error("Socket Retry Match Error:", err);
-            }
-        });
 
         socket.on("disconnect", async () => {
             console.log(`🔌 Client disconnected: ${socket.id}`);

@@ -4,16 +4,23 @@ import {
   acceptRide,
   driverArrived,
   verifyOtp,
+  verifyOtp,
   completeRide,
-  cancelRide
+  cancelRide,
+  getActiveRide,
+  resendOtp
 } from "./ride.controller.js";
 import { authenticate } from "../../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
+// General Active State API
+router.get("/active", authenticate, getActiveRide);
+
 // User APIs
 router.post("/book", authenticate, bookRide);
 router.post("/:id/cancel", authenticate, cancelRide); // User or Driver can cancel
+router.post("/:id/resend-otp", authenticate, resendOtp); // User specific OTP resend
 
 // Driver APIs
 router.post("/:id/accept", authenticate, acceptRide);

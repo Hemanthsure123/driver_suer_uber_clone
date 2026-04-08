@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 import { SOCKET_URL } from "../../config";
 import { useNavigate } from 'react-router-dom';
-import { acceptRide, driverArrived, verifyOtp } from "../../api/ride.api";
+import { acceptRide, driverArrived, verifyOtp, getActiveRide } from "../../api/ride.api";
 
 // ✅ Connect to Backend
 const socket = io(SOCKET_URL);
@@ -24,6 +24,54 @@ export default function DriverDashboard() {
   const [incomingRide, setIncomingRide] = useState(null);
   const [activeRide, setActiveRide] = useState(null);
   const [otpInput, setOtpInput] = useState("");
+
+  // --- STATE RECOVERY ON MOUNT ---
+  useEffect(() => {
+    const fetchActiveRide = async () => {
+      try {
+        const res = await getActiveRide();
+        if (res.data && res.data.ride) {
+           const { ride } = res.data;
+           const rehydratedRidePayload = {
+              rideId: ride._id, 
+              pickup: ride.pickupLocation, 
+              drop: ride.dropLocation, 
+              fareAmount: ride.fareAmount 
+           };
+           
+           setActiveRide(rehydratedRidePayload);
+
+           if (ride.rideStatus === "driver_assigned") {
+               setDriverState("ACCEPTED");
+           } else if (ride.rideStatus === "driver_arrived") {
+               setDriverState("ARRIVED");
+           } else if (ride.rideStatus === "ride_started") {
+               setDriverState("EN_ROUTE");
+           }
+        }
+      } catch (err) {
+        console.error("Failed to fetch active driver ride", err);
+      }
+    };
+    fetchActiveRide();
+  }, []);
+
+  // Map Drawing logic isolated to re-fire on state hydrations
+  useEffect(() => {
+     if (activeRide && directionsServiceRef.current && myMarkerRef.current && myMarkerRef.current.position) {
+         if (driverState === "ACCEPTED") {
+            const driverPos = myMarkerRef.current.position;
+            const lat = typeof driverPos.lat === "function" ? driverPos.lat() : driverPos.lat;
+            const lng = typeof driverPos.lng === "function" ? driverPos.lng() : driverPos.lng;
+            const [destLng, destLat] = activeRide.pickup.coordinates;
+            calculateRoute(lat, lng, destLat, destLng);
+         } else if (driverState === "EN_ROUTE") {
+            const [pickupLng, pickupLat] = activeRide.pickup.coordinates;
+            const [dropLng, dropLat] = activeRide.drop.coordinates;
+            calculateRoute(pickupLat, pickupLng, dropLat, dropLng);
+         }
+     }
+  }, [driverState, activeRide]);
 
   useEffect(() => {
     const initMap = async () => {

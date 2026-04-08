@@ -5,6 +5,7 @@ import redisClient from "../../config/redis.js";
 import { getIo } from "../../socket.js";
 import { sendEmail } from "../../utils/email.util.js";
 import { generateOtp } from "../../utils/otp.util.js";
+import { startMatching, stopMatching } from "./ride.matching.js";
 
 /**
  * USER: Book a new ride
@@ -31,6 +32,9 @@ export const bookRide = async (req, res) => {
             fareAmount,
             rideStatus: "requested"
         });
+
+        // 2. Instantly start the background worker to handle matching reliably
+        startMatching(ride._id, pickup, drop, distanceKm, fareAmount);
 
         // 2. Query Redis for nearby drivers (5km radius) using ngeohash
         const [lon, lat] = pickup.coordinates;
@@ -136,6 +140,9 @@ export const acceptRide = async (req, res) => {
         if (!ride) {
             return res.status(409).json({ error: "Ride already accepted by another driver or cancelled" });
         }
+
+        // Cancel background matching loop, it has been handled
+        stopMatching(rideId);
 
         // Mark Driver as busy
         driver.isAvailable = false;
@@ -343,6 +350,7 @@ export const cancelRide = async (req, res) => {
 
         ride.rideStatus = "cancelled";
         await ride.save();
+        stopMatching(rideId);
 
         // B. If a driver was already assigned, free them immediately
         if (ride.driverId) {
@@ -372,5 +380,100 @@ export const cancelRide = async (req, res) => {
     } catch (err) {
         console.error("Cancel Ride Error:", err);
         return res.status(500).json({ error: "Failed to cancel ride" });
+    }
+};
+
+/**
+ * BOTH: Get Current Active Ride
+ */
+export const getActiveRide = async (req, res) => {
+    try {
+        const userId = req.user.sub;
+        
+        const activeStatuses = [
+            "requested", 
+            "driver_assigned", 
+            "driver_arrived", 
+            "ride_started"
+        ];
+        
+        let ride = await Ride.findOne({
+            $or: [{ userId }, { driverId: userId }],
+            rideStatus: { $in: activeStatuses }
+        }).populate("userId", "fullName phone email");
+
+        if (!ride) {
+            return res.json({ ride: null });
+        }
+
+        let driverData = null;
+        if (ride.driverId) {
+            const driver = await Driver.findOne({ userId: ride.driverId });
+            if (driver) {
+                driverData = {
+                    fullName: driver.fullName,
+                    phone: driver.phone,
+                    vehicle: driver.vehicle,
+                    rating: driver.rating || 5.0,
+                    id: driver.userId
+                };
+            }
+        }
+
+        // 🛡️ Security: Hide OTP if requested by User
+        let otpRequired = false;
+        if (ride.rideStatus === "driver_arrived" && ride.userId._id.toString() === userId.toString()) {
+            otpRequired = true;
+            // Overwriting raw value safely for response dispatch
+            const filteredRide = ride.toObject();
+            filteredRide.otpCode = undefined; 
+            return res.json({ 
+                ride: filteredRide, 
+                driver: driverData,
+                otpRequired 
+            });
+        }
+
+        return res.json({ 
+            ride, 
+            driver: driverData,
+            otpRequired
+        });
+
+    } catch (err) {
+        console.error("Get Active Ride Error:", err);
+        return res.status(500).json({ error: "Failed to fetch active ride" });
+    }
+};
+
+/**
+ * USER: Resend OTP securely matching real Uber constraints
+ */
+export const resendOtp = async (req, res) => {
+    try {
+        const rideId = req.params.id;
+        const userId = req.user.sub;
+
+        const ride = await Ride.findOne({ _id: rideId, userId, rideStatus: "driver_arrived" }).populate("userId", "email");
+        if (!ride) {
+            return res.status(404).json({ error: "Valid ride not found for OTP resend" });
+        }
+
+        const otp = generateOtp();
+        ride.otpCode = otp;
+        ride.otpExpiration = new Date(Date.now() + 15 * 60 * 1000);
+        await ride.save();
+
+        try {
+            await sendEmail(ride.userId.email, otp);
+            console.log(`[resendOtp] ✅ OTP email resent to ${ride.userId.email}`);
+            return res.json({ message: "OTP sent successfully to your account email." });
+        } catch (emailErr) {
+            console.error(`[resendOtp] ❌ SMTP failed: ${emailErr.message}`);
+            return res.status(502).json({ error: "Failed to send email. Check SMTP credentials." });
+        }
+    } catch (err) {
+        console.error("Resend OTP Error:", err);
+        return res.status(500).json({ error: "Failed to resend OTP" });
     }
 };
