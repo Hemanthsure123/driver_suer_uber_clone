@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 // Auth
 import Login from "./pages/Login";
+import ForgotPassword from "./pages/auth/ForgotPassword";
+import ResetPassword from "./pages/auth/ResetPassword";
 
 // User
 import UserSignup from "./pages/user/UserSignup";
@@ -30,6 +32,8 @@ export default function App() {
 
         {/* AUTH */}
         <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
 
         {/* USER FLOW */}
         <Route path="/user/signup" element={<UserSignup />} />

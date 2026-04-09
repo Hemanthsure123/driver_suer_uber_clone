@@ -2,8 +2,10 @@ import User from "../users/user.model.js";
 import Driver from "../drivers/driver.model.js";
 import Otp from "./otp.model.js";
 
-import { sendEmail } from "../../utils/email.util.js";
+import { sendEmail, sendPasswordResetEmail } from "../../utils/email.util.js";
 import { hashPassword, comparePassword } from "../../utils/password.util.js";
+import crypto from "crypto";
+import ResetToken from "./resetToken.model.js";
 import { generateOtp, hashOtp } from "../../utils/otp.util.js";
 import { signToken } from "../../utils/jwt.util.js";
 import { signOnboardingToken } from "../../utils/jwt.util.js";
@@ -284,5 +286,159 @@ export const getMe = async (req, res) => {
   } catch (err) {
     console.error("GetMe error:", err);
     return res.status(500).json({ error: "Failed to fetch profile" });
+  }
+};
+
+/**
+ * ============================
+ * EDIT PROFILE (ME)
+ * ============================
+ */
+export const editProfile = async (req, res) => {
+  try {
+    const userId = req.user.sub;
+    const role = req.user.role;
+    const { name, mobile } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    if (role === "USER") {
+      if (name) user.profile.name = name;
+      if (mobile) user.profile.mobile = mobile;
+      await user.save();
+    } else if (role === "DRIVER") {
+      const driver = await Driver.findOne({ userId });
+      if (driver) {
+        if (name) driver.fullName = name;
+        if (mobile) driver.phone = mobile;
+        await driver.save();
+      }
+    }
+
+    return res.json({ message: "Profile updated successfully" });
+  } catch (err) {
+    console.error("Edit profile error:", err);
+    return res.status(500).json({ error: "Failed to update profile" });
+  }
+};
+
+/**
+ * ============================
+ * CHANGE PASSWORD (LOGGED IN)
+ * ============================
+ */
+export const changePassword = async (req, res) => {
+  try {
+    const userId = req.user.sub;
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: "Current and new passwords required" });
+    }
+
+    if (currentPassword === newPassword) {
+      return res.status(400).json({ error: "New password cannot be same as old password" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const isValid = await comparePassword(currentPassword, user.passwordHash);
+    if (!isValid) return res.status(401).json({ error: "Invalid current password" });
+
+    user.passwordHash = await hashPassword(newPassword);
+    await user.save();
+
+    return res.json({ message: "Password changed successfully" });
+  } catch (err) {
+    console.error("Change password error:", err);
+    return res.status(500).json({ error: "Failed to change password" });
+  }
+};
+
+/**
+ * ============================
+ * FORGOT PASSWORD (EMAIL TRIGGER)
+ * ============================
+ */
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: "Email is required" });
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      // Return 200 anyway to prevent email enumeration attacks
+      return res.status(200).json({ message: "If your email is registered, a reset link will be sent." });
+    }
+
+    // Generate secure randomized crypto token
+    const rawToken = crypto.randomBytes(32).toString("hex");
+    const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
+
+    // Clear old tokens for this user
+    await ResetToken.deleteMany({ userId: user._id });
+
+    // Store in DB (expires in 15 mins)
+    await ResetToken.create({
+      userId: user._id,
+      tokenHash,
+      expiresAt: new Date(Date.now() + 15 * 60 * 1000)
+    });
+
+    // Send Reset Link via Email
+    const resetLink = `https://beanlike-stormbound-myong.ngrok-free.dev/reset-password/${rawToken}`;
+    await sendPasswordResetEmail(user.email, resetLink);
+
+    return res.status(200).json({ message: "If your email is registered, a reset link will be sent." });
+  } catch (err) {
+    console.error("Forgot password error:", err);
+    return res.status(500).json({ error: "Failed to process forgot password" });
+  }
+};
+
+/**
+ * ============================
+ * RESET PASSWORD (CONSUME TOKEN)
+ * ============================
+ */
+export const resetPassword = async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    if (!token || !newPassword) {
+      return res.status(400).json({ error: "Token and new password required" });
+    }
+
+    const hashedInputToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    const tokenRecord = await ResetToken.findOne({ tokenHash: hashedInputToken });
+    if (!tokenRecord) {
+      return res.status(400).json({ error: "Invalid or expired reset token" });
+    }
+
+    if (tokenRecord.expiresAt < Date.now()) {
+      await tokenRecord.deleteOne();
+      return res.status(400).json({ error: "Reset token has expired" });
+    }
+
+    const user = await User.findById(tokenRecord.userId);
+    if (!user) {
+      return res.status(404).json({ error: "User no longer exists" });
+    }
+
+    user.passwordHash = await hashPassword(newPassword);
+    await user.save();
+
+    // Invalidate the token immediately
+    await tokenRecord.deleteOne();
+
+    return res.json({ message: "Password reset correctly. You can now login." });
+  } catch (err) {
+    console.error("Reset password error:", err);
+    return res.status(500).json({ error: "Failed to reset password" });
   }
 };

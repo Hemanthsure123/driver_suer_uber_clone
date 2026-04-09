@@ -3,7 +3,7 @@ import { io } from 'socket.io-client';
 import { SOCKET_URL } from "../../config";
 import { useNavigate } from 'react-router-dom';
 import { acceptRide, driverArrived, verifyOtp, getActiveRide, completeRide, getRideHistory } from "../../api/ride.api";
-import { getMe } from "../../api/auth.api";
+import { getMe, editProfile, changePassword } from "../../api/auth.api";
 // ✅ Connect to Backend
 const socket = io(SOCKET_URL);
 
@@ -27,8 +27,18 @@ export default function DriverDashboard() {
 
   // Profile & History State
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [viewMode, setViewMode] = useState("profile"); // profile | edit | password
   const [userProfile, setUserProfile] = useState(null);
   const [rideHistory, setRideHistory] = useState([]);
+
+  // Edit Profile Form State
+  const [editName, setEditName] = useState("");
+  const [editMobile, setEditMobile] = useState("");
+  
+  // Password Form State
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [profileActionLoading, setProfileActionLoading] = useState(false);
 
   // --- STATE RECOVERY ON MOUNT ---
   useEffect(() => {
@@ -219,14 +229,50 @@ export default function DriverDashboard() {
 
   const handleOpenProfile = async () => {
     setIsProfileOpen(true);
+    setViewMode("profile");
     try {
         const profileRes = await getMe();
         // Since driver calls getMe, it returns { user, driver }
         setUserProfile(profileRes.data);
+        
+        setEditName(profileRes.data.driver?.fullName || "");
+        setEditMobile(profileRes.data.driver?.phone || "");
+
         const historyRes = await getRideHistory();
         setRideHistory(historyRes.data.rides || []);
     } catch (err) {
         console.error("Failed to fetch profile/history", err);
+    }
+  };
+
+  const handleEditProfileSubmit = async (e) => {
+    e.preventDefault();
+    setProfileActionLoading(true);
+    try {
+      await editProfile({ name: editName, mobile: editMobile });
+      alert("Profile updated successfully!");
+      await handleOpenProfile(); // Refresh data
+      setViewMode("profile");
+    } catch (err) {
+      alert(err.response?.data?.error || "Failed to update profile");
+    } finally {
+      setProfileActionLoading(false);
+    }
+  };
+
+  const handleChangePasswordSubmit = async (e) => {
+    e.preventDefault();
+    setProfileActionLoading(true);
+    try {
+      await changePassword({ currentPassword, newPassword });
+      alert("Password changed successfully!");
+      setViewMode("profile");
+      setCurrentPassword("");
+      setNewPassword("");
+    } catch (err) {
+      alert(err.response?.data?.error || "Failed to change password");
+    } finally {
+      setProfileActionLoading(false);
     }
   };
 
@@ -337,20 +383,65 @@ export default function DriverDashboard() {
          boxShadow: isProfileOpen ? '10px 0 30px rgba(0,0,0,0.5)' : 'none', display: 'flex', flexDirection: 'column', boxSizing: 'border-box'
       }}>
          {/* Drawer Header */}
-         <div style={{ padding: '40px 20px 30px 20px', borderBottom: '1px solid #333', position: 'relative' }}>
+         <div style={{ padding: '40px 20px 20px 20px', borderBottom: '1px solid #333', position: 'relative' }}>
              <button onClick={() => setIsProfileOpen(false)} style={{ position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', color: '#888', fontSize: '24px', cursor: 'pointer' }}>✕</button>
-             {userProfile && userProfile.driver ? (
-                 <div style={{ display: 'flex', alignItems: 'center', marginTop: '10px' }}>
-                    <div style={{ width: '60px', height: '60px', borderRadius: '50%', overflow: 'hidden', marginRight: '15px', background: '#333', flexShrink: 0 }}>
-                        <img src={`https://api.dicebear.com/7.x/initials/svg?seed=${userProfile.driver.fullName}&backgroundColor=ffffff&textColor=000000`} alt="Avatar" style={{ width: '100%', height: '100%' }} />
-                    </div>
-                    <div style={{ overflow: 'hidden' }}>
-                        <div style={{ fontSize: '18px', fontWeight: 'bold', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{userProfile.driver.fullName}</div>
-                        <div style={{ fontSize: '12px', color: '#aaa', marginTop: '4px', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{userProfile.user.email}</div>
-                        <div style={{ fontSize: '11px', background: '#333', display: 'inline-block', padding: '2px 8px', borderRadius: '10px', marginTop: '6px' }}>
-                           {userProfile.driver.vehicle?.brand} {userProfile.driver.vehicle?.model} • {userProfile.driver.vehicle?.rcNumber}
+             {viewMode !== "profile" && (
+                 <button onClick={() => setViewMode("profile")} style={{ position: 'absolute', top: '20px', left: '15px', background: 'none', border: 'none', color: '#3b82f6', fontSize: '14px', cursor: 'pointer', fontWeight: 'bold' }}>← Back</button>
+             )}
+
+             {userProfile && userProfile.driver && viewMode === "profile" ? (
+                 <div style={{ marginTop: '10px' }}>
+                     <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <div style={{ width: '60px', height: '60px', borderRadius: '50%', overflow: 'hidden', marginRight: '15px', background: '#333', flexShrink: 0 }}>
+                            <img src={`https://api.dicebear.com/7.x/initials/svg?seed=${userProfile.driver.fullName}&backgroundColor=ffffff&textColor=000000`} alt="Avatar" style={{ width: '100%', height: '100%' }} />
                         </div>
-                    </div>
+                        <div style={{ overflow: 'hidden' }}>
+                            <div style={{ fontSize: '18px', fontWeight: 'bold', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{userProfile.driver.fullName}</div>
+                            <div style={{ fontSize: '12px', color: '#aaa', marginTop: '4px', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{userProfile.user.email}</div>
+                            <div style={{ fontSize: '12px', color: '#aaa', marginTop: '4px' }}>📞 {userProfile.driver.phone}</div>
+                            <div style={{ fontSize: '11px', background: '#333', display: 'inline-block', padding: '2px 8px', borderRadius: '10px', marginTop: '6px' }}>
+                               {userProfile.driver.vehicle?.brand} {userProfile.driver.vehicle?.model} • {userProfile.driver.vehicle?.rcNumber}
+                            </div>
+                        </div>
+                     </div>
+                     <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+                        <button onClick={() => setViewMode("edit")} style={{ flex: 1, padding: '8px', background: '#333', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold' }}>Edit Profile</button>
+                        <button onClick={() => setViewMode("password")} style={{ flex: 1, padding: '8px', background: '#333', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold' }}>Change Password</button>
+                     </div>
+                 </div>
+             ) : userProfile && viewMode === "edit" ? (
+                 <div style={{ marginTop: '20px' }}>
+                     <h3 style={{ margin: '0 0 15px 0', fontSize: '18px' }}>Edit Profile</h3>
+                     <form onSubmit={handleEditProfileSubmit}>
+                         <div style={{ marginBottom: '15px' }}>
+                            <label style={{ display: 'block', fontSize: '12px', color: '#888', marginBottom: '5px' }}>Full Name</label>
+                            <input type="text" value={editName} onChange={e => setEditName(e.target.value)} required style={{ width: '100%', padding: '10px', background: '#222', border: '1px solid #444', color: '#fff', borderRadius: '6px', boxSizing: 'border-box' }}/>
+                         </div>
+                         <div style={{ marginBottom: '20px' }}>
+                            <label style={{ display: 'block', fontSize: '12px', color: '#888', marginBottom: '5px' }}>Mobile Number</label>
+                            <input type="text" value={editMobile} onChange={e => setEditMobile(e.target.value)} required style={{ width: '100%', padding: '10px', background: '#222', border: '1px solid #444', color: '#fff', borderRadius: '6px', boxSizing: 'border-box' }}/>
+                         </div>
+                         <button type="submit" disabled={profileActionLoading} style={{ width: '100%', padding: '12px', background: '#fff', color: '#000', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: profileActionLoading ? 'not-allowed' : 'pointer' }}>
+                             {profileActionLoading ? "Saving..." : "Save Changes"}
+                         </button>
+                     </form>
+                 </div>
+             ) : userProfile && viewMode === "password" ? (
+                 <div style={{ marginTop: '20px' }}>
+                     <h3 style={{ margin: '0 0 15px 0', fontSize: '18px' }}>Change Password</h3>
+                     <form onSubmit={handleChangePasswordSubmit}>
+                         <div style={{ marginBottom: '15px' }}>
+                            <label style={{ display: 'block', fontSize: '12px', color: '#888', marginBottom: '5px' }}>Current Password</label>
+                            <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} required style={{ width: '100%', padding: '10px', background: '#222', border: '1px solid #444', color: '#fff', borderRadius: '6px', boxSizing: 'border-box' }}/>
+                         </div>
+                         <div style={{ marginBottom: '20px' }}>
+                            <label style={{ display: 'block', fontSize: '12px', color: '#888', marginBottom: '5px' }}>New Password</label>
+                            <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} required style={{ width: '100%', padding: '10px', background: '#222', border: '1px solid #444', color: '#fff', borderRadius: '6px', boxSizing: 'border-box' }}/>
+                         </div>
+                         <button type="submit" disabled={profileActionLoading} style={{ width: '100%', padding: '12px', background: '#fff', color: '#000', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: profileActionLoading ? 'not-allowed' : 'pointer' }}>
+                             {profileActionLoading ? "Updating..." : "Update Password"}
+                         </button>
+                     </form>
                  </div>
              ) : (
                  <div style={{ display: 'flex', alignItems: 'center', marginTop: '10px' }}>Loading...</div>
@@ -358,31 +449,33 @@ export default function DriverDashboard() {
          </div>
          
          {/* History Render */}
-         <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
-             <h3 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#888', textTransform: 'uppercase', letterSpacing: '1px' }}>Past Trips (Driver)</h3>
-             {rideHistory.length === 0 ? (
-                 <div style={{ color: '#555', fontSize: '14px', textAlign: 'center', marginTop: '30px' }}>No past trips found.</div>
-             ) : (
-                 rideHistory.map(ride => (
-                     <div key={ride._id} style={{ background: '#222', borderRadius: '12px', padding: '15px', marginBottom: '15px' }}>
-                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                             <span style={{ fontSize: '12px', color: '#888' }}>{new Date(ride.createdAt).toLocaleDateString()}</span>
-                             <span style={{ fontWeight: 'bold', color: ride.rideStatus === 'cancelled' ? '#ff4d4f' : '#00e676' }}>
-                                 {ride.rideStatus === 'cancelled' ? 'Cancelled' : `+ ₹${ride.fareAmount}`}
-                             </span>
+         {viewMode === "profile" && (
+             <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
+                 <h3 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#888', textTransform: 'uppercase', letterSpacing: '1px' }}>Past Trips (Driver)</h3>
+                 {rideHistory.length === 0 ? (
+                     <div style={{ color: '#555', fontSize: '14px', textAlign: 'center', marginTop: '30px' }}>No past trips found.</div>
+                 ) : (
+                     rideHistory.map(ride => (
+                         <div key={ride._id} style={{ background: '#222', borderRadius: '12px', padding: '15px', marginBottom: '15px' }}>
+                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                 <span style={{ fontSize: '12px', color: '#888' }}>{new Date(ride.createdAt).toLocaleDateString()}</span>
+                                 <span style={{ fontWeight: 'bold', color: ride.rideStatus === 'cancelled' ? '#ff4d4f' : '#00e676' }}>
+                                     {ride.rideStatus === 'cancelled' ? 'Cancelled' : `+ ₹${ride.fareAmount}`}
+                                 </span>
+                             </div>
+                             <div style={{ fontSize: '13px', marginBottom: '8px', display: 'flex', alignItems: 'flex-start' }}>
+                                 <div style={{ marginRight: '8px' }}>🟢</div>
+                                 <div style={{ color: '#ddd', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ride.pickupLocation?.address}</div>
+                             </div>
+                             <div style={{ fontSize: '13px', display: 'flex', alignItems: 'flex-start' }}>
+                                 <div style={{ marginRight: '8px' }}>📍</div>
+                                 <div style={{ color: '#ddd', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ride.dropLocation?.address}</div>
+                             </div>
                          </div>
-                         <div style={{ fontSize: '13px', marginBottom: '8px', display: 'flex', alignItems: 'flex-start' }}>
-                             <div style={{ marginRight: '8px' }}>🟢</div>
-                             <div style={{ color: '#ddd', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ride.pickupLocation?.address}</div>
-                         </div>
-                         <div style={{ fontSize: '13px', display: 'flex', alignItems: 'flex-start' }}>
-                             <div style={{ marginRight: '8px' }}>📍</div>
-                             <div style={{ color: '#ddd', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ride.dropLocation?.address}</div>
-                         </div>
-                     </div>
-                 ))
-             )}
-         </div>
+                     ))
+                 )}
+             </div>
+         )}
       </div>
       
       {/* Dark overlay block when profile is open */}

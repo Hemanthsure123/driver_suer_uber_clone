@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { login } from "../api/auth.api";
 import { useNavigate, Link } from "react-router-dom";
 
@@ -48,6 +48,8 @@ export default function Login() {
           onChange={e => setPassword(e.target.value)}
         />
       </div>
+
+      <Link to="/forgot-password" style={{ color: '#6b7280', fontSize: '13px', display: 'block', textAlign: 'right', marginTop: '-10px', marginBottom: '20px', textDecoration: 'none' }}>Forgot Password?</Link>
 
       <button className="auth-button" onClick={submit}>Sign In</button>
 
