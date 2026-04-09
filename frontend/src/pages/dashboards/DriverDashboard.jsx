@@ -11,6 +11,8 @@ export default function DriverDashboard() {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const myMarkerRef = useRef(null);
+  const lastLocationUpdateRef = useRef(0); // For rate limiting location socket emissions
+  const activeRideIdRef = useRef(null);
   const navigate = useNavigate();
 
   // Maps Routing Refs
@@ -55,6 +57,10 @@ export default function DriverDashboard() {
            };
            
            setActiveRide(rehydratedRidePayload);
+           activeRideIdRef.current = ride._id;
+           
+           // Join the specific ride room for low latency tracking updates
+           socket.emit("subscribe-ride", { rideId: ride._id });
 
            if (ride.rideStatus === "driver_assigned") {
                setDriverState("ACCEPTED");
@@ -196,10 +202,21 @@ export default function DriverDashboard() {
         (position) => {
           const { latitude, longitude } = position.coords;
 
-          socket.emit("send-location", { latitude, longitude, type: 'driver' });
-          
-          if (driverId) {
-            socket.emit("update-location", { driverId, latitude, longitude });
+          const now = Date.now();
+          // Rate limit emissions to every 2.5 seconds
+          if (now - lastLocationUpdateRef.current >= 2500) {
+              lastLocationUpdateRef.current = now;
+              
+              socket.emit("send-location", { latitude, longitude, type: 'driver' });
+              
+              if (driverId) {
+                socket.emit("update-location", { 
+                    driverId, 
+                    latitude, 
+                    longitude, 
+                    rideId: activeRideIdRef.current 
+                });
+              }
           }
 
           if (mapInstanceRef.current) {
@@ -296,8 +313,13 @@ export default function DriverDashboard() {
     try {
       await acceptRide(incomingRide.rideId);
       setActiveRide(incomingRide);
+      activeRideIdRef.current = incomingRide.rideId;
+      
+      // Emit to join socket room for this specific ride
+      socket.emit("subscribe-ride", { rideId: incomingRide.rideId });
+
       setIncomingRide(null);
-      setDriverState("ACCEPTED"); 
+      setDriverState("ACCEPTED");  
       
       // Plot route to passenger pickup! (Mongoose Coords: [lng, lat])
       if (myMarkerRef.current && myMarkerRef.current.position) {
@@ -349,6 +371,7 @@ export default function DriverDashboard() {
          }
          setDriverState("ONLINE");
          setActiveRide(null);
+         activeRideIdRef.current = null;
      } catch (err) {
          alert(err.response?.data?.error || "Failed to complete ride");
      }

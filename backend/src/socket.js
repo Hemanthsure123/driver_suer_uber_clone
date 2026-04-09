@@ -35,11 +35,22 @@ export const initializeSocket = (server) => {
         });
 
         /**
+         * RIDE SOCKET ROOMS
+         * Join a socket to a specific ride room for low-latency live tracking
+         */
+        socket.on("subscribe-ride", ({ rideId }) => {
+            if (rideId) {
+                socket.join(`ride_${rideId}`);
+                console.log(`[Socket] Socket ${socket.id} joined room: ride_${rideId}`);
+            }
+        });
+
+        /**
          * 1. REAL-TIME LOCATION TRACKING
          * Push location updates into high throughput Kafka Topic stream
          */
         socket.on("update-location", async (data) => {
-            const { driverId, latitude, longitude, activeRideUserId } = data;
+            const { driverId, latitude, longitude, activeRideUserId, rideId } = data;
             if (driverId && latitude && longitude) {
                 try {
                     // Lazy import so we don't circularly depend if kafka touches socket
@@ -49,12 +60,23 @@ export const initializeSocket = (server) => {
                     await redisClient.set(`driver_socket:${driverId}`, socket.id);
                     await redisClient.set(`socket_driver:${socket.id}`, driverId);
                     
-                    // Produce location update task
+                    // A. REAL-TIME PATH -> Directly emit to subscribers of this ride for < 50ms latency
+                    if (rideId) {
+                        io.to(`ride_${rideId}`).emit("receive-location", {
+                            id: driverId,
+                            latitude,
+                            longitude,
+                            type: 'driver'
+                        });
+                    }
+
+                    // B. HIGH-THROUGHPUT STREAMING PATH -> Kafka Producer for persistence & geohash
                     await produceMessage("driver_locations", [{
                         driverId,
                         latitude,
                         longitude,
-                        activeRideUserId
+                        activeRideUserId,
+                        rideId
                     }]);
                     
                 } catch (err) {

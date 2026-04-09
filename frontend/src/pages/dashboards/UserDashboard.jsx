@@ -23,6 +23,11 @@ export default function UserDashboard() {
   const directionsServiceRef = useRef(null);
   const directionsRendererRef = useRef(null);
   const geocoderRef = useRef(null);
+  
+  // Real-time Socket tracking refs (avoids stale closures limit)
+  const lastRouteUpdateRef = useRef(0);
+  const rideStateRef = useRef("IDLE");
+  const currentRidePayloadRef = useRef(null);
 
   // --- RIDE LIFECYCLE STATE MACHINE --- //
   // IDLE -> ROUTE_PREVIEW -> WAITING_FOR_DRIVER -> DRIVER_ASSIGNED -> DRIVER_ARRIVED -> RIDE_STARTED
@@ -57,6 +62,11 @@ export default function UserDashboard() {
   const [profileActionLoading, setProfileActionLoading] = useState(false);
 
   // --- STATE RECOVERY ON MOUNT ---
+  
+  // Keep refs synced for socket closures
+  useEffect(() => { rideStateRef.current = rideState; }, [rideState]);
+  useEffect(() => { currentRidePayloadRef.current = currentRidePayload; }, [currentRidePayload]);
+
   useEffect(() => {
     const fetchActiveRide = async () => {
       try {
@@ -101,6 +111,13 @@ export default function UserDashboard() {
     };
     fetchActiveRide();
   }, []);
+
+  // Sync socket room with active ride
+  useEffect(() => {
+    if (currentRideId) {
+      socket.emit("subscribe-ride", { rideId: currentRideId });
+    }
+  }, [currentRideId]);
 
   const handleResendOtp = async () => {
      if (!currentRideId) return;
@@ -420,16 +437,76 @@ export default function UserDashboard() {
 
       const { id, latitude, longitude, type } = data;
       if (type === 'driver') {
-        const position = { lat: Number(latitude), lng: Number(longitude) };
+        const newPosition = { lat: Number(latitude), lng: Number(longitude) };
         if (markersRef.current[id]) {
-          markersRef.current[id].position = position;
+            // Smooth Interpolation
+            const oldPos = markersRef.current[id].position;
+            const startLat = typeof oldPos.lat === "function" ? oldPos.lat() : oldPos.lat;
+            const startLng = typeof oldPos.lng === "function" ? oldPos.lng() : oldPos.lng;
+            
+            const renderSteps = 30; // approx half a second at 60fps
+            let step = 0;
+            
+            const animate = () => {
+                step += 1;
+                const progress = step / renderSteps; // Linear interpolation. Can use ease-out if desired.
+                const currentLat = startLat + (newPosition.lat - startLat) * progress;
+                const currentLng = startLng + (newPosition.lng - startLng) * progress;
+                
+                if (markersRef.current[id]) {
+                    markersRef.current[id].position = { lat: currentLat, lng: currentLng };
+                }
+
+                if (step < renderSteps) {
+                    requestAnimationFrame(animate);
+                }
+            };
+            requestAnimationFrame(animate);
         } else {
            if (mapInstanceRef.current) {
              const pin = new PinElement({ glyphText: "D", background: "#0F52BA", borderColor: "#00008B", glyphColor: "white" });
              markersRef.current[id] = new AdvancedMarkerElement({
-               position, map: mapInstanceRef.current, title: "Driver", content: pin
+               position: newPosition, map: mapInstanceRef.current, title: "Driver", content: pin
              });
            }
+        }
+
+        // --- DYNAMIC POLYLINE ROUTE UPDATE ---
+        const now = Date.now();
+        // Throttle Maps API calls to every 15 seconds
+        if (now - lastRouteUpdateRef.current > 15000) {
+            const currentState = rideStateRef.current;
+            const payload = currentRidePayloadRef.current;
+
+            if (directionsServiceRef.current && directionsRendererRef.current && payload) {
+                if (currentState === "DRIVER_ASSIGNED") {
+                    // Draw route connecting Driver -> Pickup
+                    const request = {
+                        origin: newPosition,
+                        destination: { lat: payload.pickup.coordinates[1], lng: payload.pickup.coordinates[0] },
+                        travelMode: window.google.maps.TravelMode.DRIVING,
+                    };
+                    directionsServiceRef.current.route(request, (result, status) => {
+                        if (status === "OK") {
+                            directionsRendererRef.current.setDirections(result);
+                            lastRouteUpdateRef.current = Date.now();
+                        }
+                    });
+                } else if (currentState === "RIDE_STARTED") {
+                    // Draw route connecting Driver -> Dropoff
+                    const request = {
+                        origin: newPosition,
+                        destination: { lat: payload.drop.coordinates[1], lng: payload.drop.coordinates[0] },
+                        travelMode: window.google.maps.TravelMode.DRIVING,
+                    };
+                    directionsServiceRef.current.route(request, (result, status) => {
+                        if (status === "OK") {
+                            directionsRendererRef.current.setDirections(result);
+                            lastRouteUpdateRef.current = Date.now();
+                        }
+                    });
+                }
+            }
         }
       }
     });

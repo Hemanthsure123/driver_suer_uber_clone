@@ -84,40 +84,26 @@ const handleVideoVerificationResult = async (data) => {
 
 /**
  * Handle high-throughput Driver Location tracking with GeoHashing
+ * SAFE MIGRATION Phase: We write to BOTH custom ngeohash grids and native Redis GEO.
  */
 const handleDriverLocation = async (data) => {
-  const { driverId, latitude, longitude, activeRideUserId } = data;
+  const { driverId, latitude, longitude } = data;
   
   if (driverId && latitude && longitude) {
-    // 1. Calculate Grid Hash (Precision 5 = ~4.9x4.9km)
+    // ---- OLD SYSTEM (Grid Arrays) ----
     const newHash = geohash.encode(latitude, longitude, 5);
-    
-    // 2. Manage Redis Grid Sets
     const oldHash = await redisClient.hget("driver_hash", driverId);
+    
     if (oldHash && oldHash !== newHash) {
-        // Driver moved to a new grid, remove from old grid
         await redisClient.srem(`grid:${oldHash}`, driverId);
     }
-    
-    // Add to current grid and update tracker map
     if (oldHash !== newHash) {
         await redisClient.hset("driver_hash", driverId, newHash);
         await redisClient.sadd(`grid:${newHash}`, driverId);
     }
-    
-    // 3. If Driver is currently carrying a user or moving towards point, emit event to the user's socket
-    if (activeRideUserId) {
-      const io = getIo();
-      const userSocketId = await redisClient.get(`user_socket:${activeRideUserId}`);
-      
-      if (userSocketId) {
-        io.to(userSocketId).emit("driver-moving", {
-          driverId,
-          latitude,
-          longitude
-        });
-      }
-    }
+
+    // ---- NEW SYSTEM (Redis GEO) ----
+    await redisClient.geoadd("drivers:locations", longitude, latitude, driverId);
   }
 };
 

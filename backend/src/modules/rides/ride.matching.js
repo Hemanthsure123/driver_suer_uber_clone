@@ -28,16 +28,24 @@ export const startMatching = (rideId, pickup, drop, distanceKm, fareAmount) => {
             }
 
             const [lon, lat] = pickup.coordinates;
+            
+            // 1. SAFE MIGRATION - NEW SYSTEM (Redis GEO)
+            let geoDriverIds = await redisClient.georadius("drivers:locations", lon, lat, 5, "km");
+            if (!geoDriverIds) geoDriverIds = [];
+
+            // 2. SAFE MIGRATION - OLD SYSTEM (Geohash grids fallback)
             const hash = geohash.encode(lat, lon, 5);
             const gridsToScan = [hash, ...geohash.neighbors(hash)];
             
-            const results = await Promise.all(
+            const gridResults = await Promise.all(
                 gridsToScan.map(grid => redisClient.smembers(`grid:${grid}`))
             );
             
-            let nearbyDriverIds = [];
-            results.forEach(gridDrivers => nearbyDriverIds.push(...gridDrivers));
-            nearbyDriverIds = [...new Set(nearbyDriverIds)];
+            let gridDriverIds = [];
+            gridResults.forEach(gridDrivers => gridDriverIds.push(...gridDrivers));
+
+            // 3. MERGE BOTH
+            let nearbyDriverIds = [...new Set([...geoDriverIds, ...gridDriverIds])];
             
             if (nearbyDriverIds.length > 0) {
                 const availableDrivers = await Driver.find({
