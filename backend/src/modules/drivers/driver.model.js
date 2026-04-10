@@ -100,6 +100,36 @@ const driverSchema = new mongoose.Schema(
       default: "PENDING"
     },
 
+    // 💰 WALLET & EARNINGS
+    walletBalance: {
+      type: Number,
+      default: 0
+    },
+    totalEarnings: {
+      type: Number,
+      default: 0
+    },
+    totalKm: {
+      type: Number,
+      default: 0
+    },
+
+    // 🏦 BANK DETAILS (For Payouts)
+    bankDetails: {
+      accountNumber: {
+        type: String, // Stored encrypted
+        default: null
+      },
+      ifsc: {
+        type: String,
+        default: null
+      },
+      isVerified: {
+        type: Boolean,
+        default: false
+      }
+    },
+
     // 🎥 ML LIVENESS STATUS
     livenessStatus: {
       type: String,

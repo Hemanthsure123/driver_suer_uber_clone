@@ -69,6 +69,9 @@
   "nodemailer": "^7.0.12",
   
     
+  "razorpay": "^2.9.6",
+  
+    
   "socket.io": "^4.8.3"
   
   },

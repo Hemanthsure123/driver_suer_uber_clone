@@ -7,10 +7,14 @@ import { initializeSocket, getIo } from "./socket.js";
 import redisClient from "./config/redis.js"; // Ensures connection is verified on startup
 import { connectKafka } from "./config/kafka.js";
 import Driver from "./modules/drivers/driver.model.js";
+import { initRetryWorker } from "./modules/payouts/retryWorker.js";
 
 const startServer = async () => {
   await connectDB();
   await connectKafka(); // Initialize Kafka Consumer/Producer
+  
+  // Initialize Payout Retry Worker
+  initRetryWorker();
 
   // ─────────────────────────────────────────────────────────────
   // D. STARTUP STATE RECOVERY
