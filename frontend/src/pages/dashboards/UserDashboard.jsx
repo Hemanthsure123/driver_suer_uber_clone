@@ -3,6 +3,7 @@ import { io } from 'socket.io-client';
 import { SOCKET_URL } from "../../config";
 import { useNavigate } from 'react-router-dom';
 import { bookRide, getActiveRide, resendOtp, getRideHistory } from "../../api/ride.api";
+import { createOrder, verifyPayment } from "../../api/payment.api";
 import { getMe, editProfile, changePassword } from "../../api/auth.api";
 // ✅ Connect to Backend
 const socket = io(SOCKET_URL);
@@ -91,6 +92,8 @@ export default function UserDashboard() {
             }
           } else if (ride.rideStatus === "ride_started") {
              setRideState("RIDE_STARTED");
+          } else if (ride.rideStatus === "payment_pending") {
+             setRideState("PAYMENT_PENDING");
           }
 
           if (ride.pickupLocation && ride.dropLocation) {
@@ -310,6 +313,7 @@ export default function UserDashboard() {
       socket.off("driver-arrived");
       socket.off("ride-started");
       socket.off("ride-completed");
+      socket.off("payment-success");
       socket.off("ride-cancelled");
     };
   }, []);
@@ -538,16 +542,21 @@ export default function UserDashboard() {
     });
 
     socket.on("ride-completed", () => {
-      alert("You have reached your destination. Payment processed.");
+      alert("You have reached your destination. Please complete your payment.");
+      setRideState("PAYMENT_PENDING");
+      if (directionsRendererRef.current) {
+          directionsRendererRef.current.setDirections({ routes: [] });
+      }
+    });
+
+    socket.on("payment-success", () => {
+      alert("Payment verified automatically.");
       setRideState("IDLE");
       setCurrentRideId(null);
       setCurrentRidePayload(null);
       setRouteDetails(null);
       setFareAmount(0);
       setAssignedDriver(null);
-      if (directionsRendererRef.current) {
-          directionsRendererRef.current.setDirections({ routes: [] });
-      }
     });
 
     socket.on("ride-cancelled", () => {
@@ -619,6 +628,55 @@ export default function UserDashboard() {
          </div>
       </div>
     );
+  };
+
+  const handlePayment = async () => {
+      try {
+        const orderRes = await createOrder(currentRideId, fareAmount);
+        const { order_id } = orderRes.data;
+
+        const options = {
+            key: "rzp_live_SbjNH99WYWRw7o",
+            amount: fareAmount * 100, 
+            currency: "INR",
+            name: "Fastride",
+            description: "Ride Payment",
+            order_id: order_id,
+            handler: async function (response) {
+                try {
+                    await verifyPayment({
+                        razorpay_order_id: response.razorpay_order_id,
+                        razorpay_payment_id: response.razorpay_payment_id,
+                        razorpay_signature: response.razorpay_signature
+                    });
+                    alert("Payment Successful!");
+                    
+                    setRideState("IDLE");
+                    setCurrentRideId(null);
+                    setCurrentRidePayload(null);
+                    setRouteDetails(null);
+                    setFareAmount(0);
+                    setAssignedDriver(null);
+                } catch (err) {
+                    alert("Payment verification failed.");
+                }
+            },
+            prefill: {
+                name: userProfile?.profile?.name || "User",
+                email: userProfile?.email || "user@example.com",
+                contact: userProfile?.profile?.mobile || ""
+            },
+            theme: { color: "#000000" }
+        };
+
+        const rzp = new window.Razorpay(options);
+        rzp.on('payment.failed', function (response){
+            alert("Payment failed: " + response.error.description);
+        });
+        rzp.open();
+      } catch (err) {
+          alert("Failed to setup payment. " + (err.response?.data?.error || ""));
+      }
   };
 
   return (
@@ -923,6 +981,22 @@ export default function UserDashboard() {
             <h2 style={{ margin: '0 0 15px 0', fontSize: '22px' }}>You are on your way!</h2>
             {renderDriverProfile()}
             <p style={{ margin: '0', color: '#555', fontSize: '15px' }}>Enjoy your ride to {currentRidePayload?.drop?.address || "your destination"}.</p>
+          </div>
+        )}
+
+        {/* PHASE: PAYMENT_PENDING */}
+        {rideState === "PAYMENT_PENDING" && (
+          <div style={{ textAlign: 'center' }}>
+            <h2 style={{ margin: '0 0 5px 0', fontSize: '24px' }}>Payment Due</h2>
+            <p style={{ margin: '0 0 20px 0', color: '#666', fontSize: '14px' }}>Please pay your driver for the ride.</p>
+            <div style={{ textAlign: 'center', marginBottom: '20px', fontSize: '36px', fontWeight: 'bold' }}>
+               ₹{fareAmount}
+            </div>
+            <button 
+              onClick={handlePayment} 
+              style={{ width: '100%', padding: '16px', background: 'black', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' }}>
+              Pay via Razorpay
+            </button>
           </div>
         )}
       </div>
