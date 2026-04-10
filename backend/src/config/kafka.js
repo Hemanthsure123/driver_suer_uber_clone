@@ -74,7 +74,7 @@ const handleVideoVerificationResult = async (data) => {
 
   if (!_id) return;
 
-  const isSuccess = success && confidence >= 70;
+  const isSuccess = success && confidence >= 50;
   
   await Driver.findByIdAndUpdate(_id, {
     livenessStatus: isSuccess ? 'COMPLETED' : 'FAILED',

@@ -154,30 +154,35 @@ def liveness(data: dict):
 
 KAFKA_BROKER = os.getenv("KAFKA_BROKER", "localhost:9092")
 
+import time
+
 def start_kafka_consumer():
-    try:
-        consumer = KafkaConsumer(
-            'video_verification_tasks',
-            bootstrap_servers=[KAFKA_BROKER],
-            auto_offset_reset='earliest',
-            enable_auto_commit=True,
-            group_id='ml-service-group',
-            value_deserializer=lambda x: json.loads(x.decode('utf-8'))
-        )
-        
-        producer = KafkaProducer(
-            bootstrap_servers=[KAFKA_BROKER],
-            value_serializer=lambda v: json.dumps(v).encode('utf-8')
-        )
-        
-        print("✅ ML Service Kafka loop started")
+    while True:
+        try:
+            consumer = KafkaConsumer(
+                'video_verification_tasks',
+                bootstrap_servers=[KAFKA_BROKER],
+                auto_offset_reset='earliest',
+                enable_auto_commit=True,
+                group_id='ml-service-group',
+                value_deserializer=lambda x: json.loads(x.decode('utf-8'))
+            )
+            
+            producer = KafkaProducer(
+                bootstrap_servers=[KAFKA_BROKER],
+                value_serializer=lambda v: json.dumps(v).encode('utf-8')
+            )
+            
+            print("✅ ML Service Kafka loop started")
         
         for message in consumer:
             data = message.value
             _id = data.get("_id")
-            video_path = os.path.abspath(os.path.join("..", "backend", data["path"])) # Access backend's uploaded path
+            # In Docker, backend and ml-service share a volume mapped to /app/uploads
+            # data["path"] is typically something like "uploads/1234.webm"
+            video_path = os.path.abspath(os.path.join("/app", data["path"]))
             
-            print(f"📥 Processing task for logic ID {_id}")
+            print(f"📥 Processing task for logic ID {_id} at {video_path}")
             
             if not os.path.exists(video_path):
                 producer.send(
@@ -268,8 +273,9 @@ def start_kafka_consumer():
             )
             print(f"✅ Processed task {_id}. Confidence: {confidence}")
             
-    except Exception as e:
-        print("❌ Kafka Thread Failed:", e)
+        except Exception as e:
+            print("❌ Kafka Thread Failed, retrying in 5s:", e)
+            time.sleep(5)
 
 # Start background thread
 threading.Thread(target=start_kafka_consumer, daemon=True).start()
