@@ -175,103 +175,103 @@ def start_kafka_consumer():
             
             print("✅ ML Service Kafka loop started")
         
-        for message in consumer:
-            data = message.value
-            _id = data.get("_id")
-            # In Docker, backend and ml-service share a volume mapped to /app/uploads
-            # data["path"] is typically something like "uploads/1234.webm"
-            video_path = os.path.abspath(os.path.join("/app", data["path"]))
+            for message in consumer:
+                data = message.value
+                _id = data.get("_id")
+                
+                # In Docker, backend and ml-service share a volume mapped to /app/uploads
+                video_path = os.path.abspath(os.path.join("/app", data["path"]))
+                
+                print(f"📥 Processing task for logic ID {_id} at {video_path}")
             
-            print(f"📥 Processing task for logic ID {_id} at {video_path}")
-            
-            if not os.path.exists(video_path):
-                producer.send(
-                    'video_verification_results', 
-                    {"_id": _id, "success": False, "reason": "Video file not found"}
-                )
-                continue
-
-            frames_dir = f"frames_{uuid.uuid4().hex}"
-            os.makedirs(frames_dir, exist_ok=True)
-
-            cmd = [
-                "ffmpeg", "-y",
-                "-i", video_path,
-                "-vf", "fps=15",
-                os.path.join(frames_dir, "frame_%03d.jpg")
-            ]
-
-            try:
-                subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            except subprocess.CalledProcessError:
-                producer.send(
-                    'video_verification_results', 
-                    {"_id": _id, "success": False, "reason": "FFmpeg failed"}
-                )
-                continue
-
-            frame_files = sorted(os.listdir(frames_dir))
-            if not frame_files:
-                producer.send(
-                    'video_verification_results', 
-                    {"_id": _id, "success": False, "reason": "No frames"}
-                )
-                continue
-
-            face_frames = []
-            eye_states = []
-
-            for fname in frame_files:
-                img = cv2.imread(os.path.join(frames_dir, fname))
-                if img is None:
+                if not os.path.exists(video_path):
+                    producer.send(
+                        'video_verification_results', 
+                        {"_id": _id, "success": False, "reason": "Video file not found"}
+                    )
                     continue
 
-                face = detect_face(img)
-                if face is None:
+                frames_dir = f"frames_{uuid.uuid4().hex}"
+                os.makedirs(frames_dir, exist_ok=True)
+
+                cmd = [
+                    "ffmpeg", "-y",
+                    "-i", video_path,
+                    "-vf", "fps=15",
+                    os.path.join(frames_dir, "frame_%03d.jpg")
+                ]
+
+                try:
+                    subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                except subprocess.CalledProcessError:
+                    producer.send(
+                        'video_verification_results', 
+                        {"_id": _id, "success": False, "reason": "FFmpeg failed"}
+                    )
                     continue
 
-                face = cv2.resize(face, (224, 224))
-                face_frames.append(face)
+                frame_files = sorted(os.listdir(frames_dir))
+                if not frame_files:
+                    producer.send(
+                        'video_verification_results', 
+                        {"_id": _id, "success": False, "reason": "No frames"}
+                    )
+                    continue
 
-                left_eye, right_eye = extract_eye_regions(face)
+                face_frames = []
+                eye_states = []
 
-                l_state = predict_eye_state(left_eye)
-                r_state = predict_eye_state(right_eye)
+                for fname in frame_files:
+                    img = cv2.imread(os.path.join(frames_dir, fname))
+                    if img is None:
+                        continue
 
-                if l_state is not None and r_state is not None:
-                    eye_states.append(0 if (l_state == 0 and r_state == 0) else 1)
+                    face = detect_face(img)
+                    if face is None:
+                        continue
 
-            # Cleanup
-            for f in frame_files:
-                os.remove(os.path.join(frames_dir, f))
-            os.rmdir(frames_dir)
+                    face = cv2.resize(face, (224, 224))
+                    face_frames.append(face)
 
-            if len(face_frames) < 5:
+                    left_eye, right_eye = extract_eye_regions(face)
+
+                    l_state = predict_eye_state(left_eye)
+                    r_state = predict_eye_state(right_eye)
+
+                    if l_state is not None and r_state is not None:
+                        eye_states.append(0 if (l_state == 0 and r_state == 0) else 1)
+
+                # Cleanup
+                for f in frame_files:
+                    os.remove(os.path.join(frames_dir, f))
+                os.rmdir(frames_dir)
+
+                if len(face_frames) < 5:
+                    producer.send(
+                        'video_verification_results', 
+                        {"_id": _id, "success": False, "reason": "Face not stable"}
+                    )
+                    continue
+
+                motion = motion_score(face_frames)
+                blink_count = count_blinks(eye_states)
+
+                motion_conf = min(50, int(motion * 10))
+                face_conf = min(30, int((len(face_frames) / len(frame_files)) * 30))
+                blink_conf = min(20, blink_count * 5)
+
+                confidence = min(100, motion_conf + face_conf + blink_conf)
+
                 producer.send(
                     'video_verification_results', 
-                    {"_id": _id, "success": False, "reason": "Face not stable"}
+                    {
+                        "_id": _id, 
+                        "success": True,
+                        "confidence": confidence,
+                        "path": data["path"]
+                    }
                 )
-                continue
-
-            motion = motion_score(face_frames)
-            blink_count = count_blinks(eye_states)
-
-            motion_conf = min(50, int(motion * 10))
-            face_conf = min(30, int((len(face_frames) / len(frame_files)) * 30))
-            blink_conf = min(20, blink_count * 5)
-
-            confidence = min(100, motion_conf + face_conf + blink_conf)
-
-            producer.send(
-                'video_verification_results', 
-                {
-                    "_id": _id, 
-                    "success": True,
-                    "confidence": confidence,
-                    "path": data["path"]
-                }
-            )
-            print(f"✅ Processed task {_id}. Confidence: {confidence}")
+                print(f"✅ Processed task {_id}. Confidence: {confidence}")
             
         except Exception as e:
             print("❌ Kafka Thread Failed, retrying in 5s:", e)
