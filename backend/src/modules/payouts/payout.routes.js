@@ -1,6 +1,6 @@
 import express from "express";
 import { requestWithdrawal } from "./payout.controller.js";
-import { authMiddleware } from "../../middlewares/auth.middleware.js";
+import { authenticate as authMiddleware } from "../../middlewares/auth.middleware.js";
 import rateLimit from "express-rate-limit";
 
 const router = express.Router();
