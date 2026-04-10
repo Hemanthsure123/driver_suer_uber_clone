@@ -80,7 +80,18 @@ export default function DriverDashboard() {
         console.error("Failed to fetch active driver ride", err);
       }
     };
+    
+    const fetchInitialProfile = async () => {
+      try {
+        const res = await getMe();
+        setUserProfile({ user: res.data.user, driver: res.data.driver });
+      } catch (err) {
+        console.error("Failed to fetch profile on mount", err);
+      }
+    };
+
     fetchActiveRide();
+    fetchInitialProfile();
   }, []);
 
   // Map Drawing logic isolated to re-fire on state hydrations
@@ -250,9 +261,9 @@ export default function DriverDashboard() {
 
   // --- ACTIONS ---
 
-  const handleOpenProfile = async () => {
+  const handleOpenProfile = async (mode = "profile") => {
     setIsProfileOpen(true);
-    setViewMode("profile");
+    setViewMode(mode);
     try {
         const profileRes = await getMe();
         // Since driver calls getMe, it returns { user, driver }
@@ -419,6 +430,21 @@ export default function DriverDashboard() {
         }}
       >
         <span style={{ fontSize: '24px', color: '#111' }}>☰</span>
+      </button>
+
+      {/* 💳 WALLET QUICK VIEW BUTTON */}
+      <button
+        onClick={() => handleOpenProfile("withdraw")}
+        style={{
+          position: 'absolute', top: '20px', left: '80px', zIndex: 1001,
+          height: '45px', padding: '0 15px', backgroundColor: 'white', border: 'none',
+          borderRadius: '25px', cursor: 'pointer', display: 'flex', alignItems: 'center',
+          justifyContent: 'center', boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
+          fontWeight: 'bold', fontSize: '15px'
+        }}
+      >
+        <span style={{ marginRight: '8px' }}>💳</span> 
+        ₹{(userProfile?.driver?.walletBalance || 0).toFixed(2)}
       </button>
 
       {/* 🟢 SIDE PROFILE DRAWER */}

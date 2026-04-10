@@ -2,7 +2,7 @@ import axios from "axios";
 import { API_BASE_URL } from "../config";
 
 const payoutApi = axios.create({
-  baseURL: `${API_BASE_URL}/payout`,
+  baseURL: `${API_BASE_URL}/driver/payouts`,
 });
 
 // Interceptor to inject JWT Token dynamically
