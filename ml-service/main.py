@@ -19,11 +19,16 @@ face_net = cv2.dnn.readNetFromCaffe(
 # =========================
 # EYE BLINK CNN (ONNX)
 # =========================
-blink_sess = ort.InferenceSession(
-    "models/eye_blink_cnn.onnx",
-    providers=["CPUExecutionProvider"]
-)
-blink_input = blink_sess.get_inputs()[0].name
+blink_sess = None
+blink_input = None
+try:
+    blink_sess = ort.InferenceSession(
+        "models/eye_blink_cnn.onnx",
+        providers=["CPUExecutionProvider"]
+    )
+    blink_input = blink_sess.get_inputs()[0].name
+except Exception as e:
+    print(f"⚠️ Warning: Could not load ONNX model (likely missing Git-LFS files). ML Eye inference will be disabled. Error: {e}")
 
 
 # =========================
@@ -73,7 +78,7 @@ def extract_eye_regions(face):
 # EYE STATE (CNN)
 # =========================
 def predict_eye_state(eye_img):
-    if eye_img.size == 0:
+    if eye_img.size == 0 or blink_sess is None:
         return None
 
     eye = cv2.resize(eye_img, (224, 224))
@@ -97,6 +102,7 @@ def predict_eye_state(eye_img):
     print("RAW logits:", preds)
 
     return int(np.argmax(preds, axis=1)[0])  # 0=closed, 1=open
+
 
 
 
