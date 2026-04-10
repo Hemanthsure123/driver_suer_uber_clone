@@ -9,7 +9,7 @@ const COMMISSION_PERCENT = parseInt(process.env.COMMISSION_PERCENT || "2", 10);
 export const createOrder = async (req, res) => {
   try {
     const { rideId, amount } = req.body;
-    const userId = req.user.id; // From auth middleware
+    const userId = req.user.sub || req.user.id; // From auth middleware
 
     const ride = await Ride.findById(rideId);
     if (!ride) return res.status(404).json({ error: "Ride not found" });
@@ -135,5 +135,30 @@ export const razorpayWebhook = async (req, res) => {
   } catch (error) {
     console.error("[Payment] Webhook Error:", error);
     res.status(500).send("Internal Server Error");
+  }
+};
+
+export const payWithCash = async (req, res) => {
+  try {
+    const { rideId, amount } = req.body;
+    const userId = req.user.sub || req.user.id;
+
+    const ride = await Ride.findById(rideId);
+    if (!ride) return res.status(404).json({ error: "Ride not found" });
+
+    // Mark as cash payment in DB
+    await Payment.create({
+      rideId,
+      userId,
+      driverId: ride.driverId,
+      amount,
+      razorpay_order_id: `cash_${rideId}_${Date.now()}`,
+      status: "captured"
+    });
+
+    res.status(200).json({ success: true, message: "Cash payment recorded successfully." });
+  } catch (error) {
+    console.error("[Payment] Cash Payment Error:", error);
+    res.status(500).json({ error: "Failed to record cash payment" });
   }
 };

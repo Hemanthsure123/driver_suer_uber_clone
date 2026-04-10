@@ -24,3 +24,7 @@ export const createOrder = async (rideId, amount) => {
 export const verifyPayment = async (verificationData) => {
   return await paymentApi.post("/verify", verificationData);
 };
+
+export const payCash = async (rideId, amount) => {
+  return await paymentApi.post("/cash", { rideId, amount });
+};

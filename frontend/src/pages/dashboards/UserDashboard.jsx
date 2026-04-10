@@ -3,7 +3,7 @@ import { io } from 'socket.io-client';
 import { SOCKET_URL } from "../../config";
 import { useNavigate } from 'react-router-dom';
 import { bookRide, getActiveRide, resendOtp, getRideHistory } from "../../api/ride.api";
-import { createOrder, verifyPayment } from "../../api/payment.api";
+import { createOrder, verifyPayment, payCash } from "../../api/payment.api";
 import { getMe, editProfile, changePassword } from "../../api/auth.api";
 // ✅ Connect to Backend
 const socket = io(SOCKET_URL);
@@ -679,6 +679,22 @@ export default function UserDashboard() {
       }
   };
 
+  const handleCashPayment = async () => {
+      try {
+          await payCash(currentRideId, fareAmount);
+          alert("Cash Payment Recorded Successfully!");
+          
+          setRideState("IDLE");
+          setCurrentRideId(null);
+          setCurrentRidePayload(null);
+          setRouteDetails(null);
+          setFareAmount(0);
+          setAssignedDriver(null);
+      } catch (err) {
+          alert("Failed to record cash payment. " + (err.response?.data?.error || ""));
+      }
+  };
+
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 0, display: 'flex', flexDirection: 'column' }}>
       
@@ -988,15 +1004,23 @@ export default function UserDashboard() {
         {rideState === "PAYMENT_PENDING" && (
           <div style={{ textAlign: 'center' }}>
             <h2 style={{ margin: '0 0 5px 0', fontSize: '24px' }}>Payment Due</h2>
-            <p style={{ margin: '0 0 20px 0', color: '#666', fontSize: '14px' }}>Please pay your driver for the ride.</p>
+            <p style={{ margin: '0 0 20px 0', color: '#666', fontSize: '14px' }}>Please select your payment method.</p>
             <div style={{ textAlign: 'center', marginBottom: '20px', fontSize: '36px', fontWeight: 'bold' }}>
                ₹{fareAmount}
             </div>
-            <button 
-              onClick={handlePayment} 
-              style={{ width: '100%', padding: '16px', background: 'black', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' }}>
-              Pay via Razorpay
-            </button>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <button 
+                  onClick={handleCashPayment} 
+                  style={{ width: '100%', padding: '16px', background: '#00c850', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' }}>
+                  💵 Pay Cash Directly 
+                </button>
+                <button 
+                  onClick={handlePayment} 
+                  style={{ width: '100%', padding: '16px', background: 'black', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' }}>
+                  💳 Pay via Razorpay
+                </button>
+            </div>
           </div>
         )}
       </div>

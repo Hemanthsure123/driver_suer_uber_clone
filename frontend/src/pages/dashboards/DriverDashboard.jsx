@@ -4,6 +4,7 @@ import { SOCKET_URL } from "../../config";
 import { useNavigate } from 'react-router-dom';
 import { acceptRide, driverArrived, verifyOtp, getActiveRide, completeRide, getRideHistory } from "../../api/ride.api";
 import { getMe, editProfile, changePassword } from "../../api/auth.api";
+import { requestWithdrawal } from "../../api/payout.api";
 // ✅ Connect to Backend
 const socket = io(SOCKET_URL);
 
@@ -41,6 +42,11 @@ export default function DriverDashboard() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [profileActionLoading, setProfileActionLoading] = useState(false);
+
+  // Withdrawal Form State
+  const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [withdrawAccountNumber, setWithdrawAccountNumber] = useState("");
+  const [withdrawIfsc, setWithdrawIfsc] = useState("");
 
   // --- STATE RECOVERY ON MOUNT ---
   useEffect(() => {
@@ -293,6 +299,22 @@ export default function DriverDashboard() {
     }
   };
 
+  const handleWithdrawSubmit = async (e) => {
+    e.preventDefault();
+    setProfileActionLoading(true);
+    try {
+      await requestWithdrawal(withdrawAmount, withdrawAccountNumber, withdrawIfsc);
+      alert("Withdrawal requested successfully! Processing typically takes 1-2 hours.");
+      setViewMode("profile");
+      setWithdrawAmount("");
+      await handleOpenProfile(); // Refresh balance
+    } catch (err) {
+      alert(err.response?.data?.error || "Failed to request withdrawal");
+    } finally {
+      setProfileActionLoading(false);
+    }
+  };
+
   const calculateRoute = (originLat, originLng, destLat, destLng) => {
     if (!directionsServiceRef.current) return;
     const request = {
@@ -431,6 +453,11 @@ export default function DriverDashboard() {
                         <button onClick={() => setViewMode("edit")} style={{ flex: 1, padding: '8px', background: '#333', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold' }}>Edit Profile</button>
                         <button onClick={() => setViewMode("password")} style={{ flex: 1, padding: '8px', background: '#333', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold' }}>Change Password</button>
                      </div>
+                     <div style={{ background: '#222', borderRadius: '12px', padding: '15px', marginTop: '20px' }}>
+                        <div style={{ fontSize: '12px', color: '#888', marginBottom: '5px' }}>Wallet Balance</div>
+                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#00e676' }}>₹{userProfile.driver.walletBalance?.toFixed(2) || "0.00"}</div>
+                        <button onClick={() => setViewMode("withdraw")} style={{ width: '100%', padding: '10px', background: '#fff', color: '#000', border: 'none', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold', marginTop: '15px' }}>Withdraw Funds</button>
+                     </div>
                  </div>
              ) : userProfile && viewMode === "edit" ? (
                  <div style={{ marginTop: '20px' }}>
@@ -463,6 +490,28 @@ export default function DriverDashboard() {
                          </div>
                          <button type="submit" disabled={profileActionLoading} style={{ width: '100%', padding: '12px', background: '#fff', color: '#000', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: profileActionLoading ? 'not-allowed' : 'pointer' }}>
                              {profileActionLoading ? "Updating..." : "Update Password"}
+                         </button>
+                     </form>
+                 </div>
+             ) : userProfile && viewMode === "withdraw" ? (
+                 <div style={{ marginTop: '20px' }}>
+                     <h3 style={{ margin: '0 0 5px 0', fontSize: '18px' }}>Withdraw Funds</h3>
+                     <p style={{ margin: '0 0 15px 0', fontSize: '12px', color: '#888' }}>Available: ₹{userProfile.driver.walletBalance?.toFixed(2) || "0.00"}</p>
+                     <form onSubmit={handleWithdrawSubmit}>
+                         <div style={{ marginBottom: '15px' }}>
+                            <label style={{ display: 'block', fontSize: '12px', color: '#888', marginBottom: '5px' }}>Amount to Withdraw (₹)</label>
+                            <input type="number" min="100" max={userProfile.driver.walletBalance} value={withdrawAmount} onChange={e => setWithdrawAmount(e.target.value)} required style={{ width: '100%', padding: '10px', background: '#222', border: '1px solid #444', color: '#fff', borderRadius: '6px', boxSizing: 'border-box' }}/>
+                         </div>
+                         <div style={{ marginBottom: '15px' }}>
+                            <label style={{ display: 'block', fontSize: '12px', color: '#888', marginBottom: '5px' }}>Account Number</label>
+                            <input type="text" value={withdrawAccountNumber} onChange={e => setWithdrawAccountNumber(e.target.value)} required style={{ width: '100%', padding: '10px', background: '#222', border: '1px solid #444', color: '#fff', borderRadius: '6px', boxSizing: 'border-box' }}/>
+                         </div>
+                         <div style={{ marginBottom: '20px' }}>
+                            <label style={{ display: 'block', fontSize: '12px', color: '#888', marginBottom: '5px' }}>IFSC Code</label>
+                            <input type="text" value={withdrawIfsc} onChange={e => setWithdrawIfsc(e.target.value)} placeholder="e.g. HDFC0000123" required style={{ width: '100%', padding: '10px', background: '#222', border: '1px solid #444', color: '#fff', borderRadius: '6px', boxSizing: 'border-box' }}/>
+                         </div>
+                         <button type="submit" disabled={profileActionLoading} style={{ width: '100%', padding: '12px', background: '#fff', color: '#000', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: profileActionLoading ? 'not-allowed' : 'pointer' }}>
+                             {profileActionLoading ? "Processing..." : "Submit Request"}
                          </button>
                      </form>
                  </div>
