@@ -31,7 +31,15 @@ export const signup = async (req, res) => {
     // 2. Check duplicate email
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(409).json({ error: "Email already registered" });
+      if (!existingUser.emailVerified) {
+        // If the user signed up but never verified their OTP, allow them to restart the flow
+        await existingUser.deleteOne();
+        if (existingUser.role === "DRIVER") {
+          await Driver.deleteOne({ userId: existingUser._id });
+        }
+      } else {
+        return res.status(409).json({ error: "Email already registered" });
+      }
     }
 
     // 3. Hash password

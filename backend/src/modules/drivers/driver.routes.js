@@ -5,6 +5,7 @@ import path from "path";
 import crypto from "crypto";
 
 import { produceMessage } from "../../config/kafka.js";
+import { livenessEmitter } from "../../config/kafka.js";
 
 import User from "../users/user.model.js";
 import Driver from "./driver.model.js";
@@ -62,11 +63,28 @@ router.post("/liveness-check", upload.single("video"), async (req, res) => {
       }
     ]);
 
-    // 3. Immediatly return 202 Accepted status while ML service consumes the task
-    res.status(202).json({
-      success: true,
-      status: "PROCESSING",
-      message: "Video verification task submitted. Result will be updated asynchronously."
+    // 3. Wait for the Kafka consumer to emit the result
+    const result = await new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        livenessEmitter.removeAllListeners(`liveness_result_${driver._id.toString()}`);
+        resolve({ isSuccess: false, confidence: 0, error: "timeout" });
+      }, 25000); // 25 seconds wait max
+
+      livenessEmitter.once(`liveness_result_${driver._id.toString()}`, (data) => {
+        clearTimeout(timeout);
+        resolve(data);
+      });
+    });
+
+    if (result.error === "timeout") {
+       return res.status(504).json({ error: "Liveness verification timed out. Please try again." });
+    }
+
+    res.json({
+      success: result.isSuccess,
+      status: result.isSuccess ? "COMPLETED" : "FAILED",
+      confidence: result.confidence,
+      message: result.isSuccess ? "Liveness check passed" : "Liveness check failed"
     });
 
   } catch (err) {

@@ -62,6 +62,9 @@ export const produceMessage = async (topic, messages) => {
   }
 };
 
+import { EventEmitter } from 'events';
+export const livenessEmitter = new EventEmitter();
+
 /**
  * Handle responses from ML Service
  */
@@ -78,6 +81,8 @@ const handleVideoVerificationResult = async (data) => {
     // We update selfieUrl only if success
     ...(isSuccess && path && { selfieUrl: path })
   });
+
+  livenessEmitter.emit(`liveness_result_${_id}`, { isSuccess, confidence: confidence || 0 });
 
   console.log(`✅ Driver livenessStatus updated for Object ID: ${_id} -> ${isSuccess ? 'COMPLETED' : 'FAILED'}`);
 };
